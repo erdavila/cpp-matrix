@@ -6,7 +6,14 @@ namespace matrix {
 
 
 template <typename T, unsigned Rows, unsigned Cols>
-class smatrix;
+class smatrix {
+public:
+	using element_type = T;
+
+	static constexpr unsigned rows() noexcept { return Rows; }
+
+	static constexpr unsigned cols() noexcept { return Cols; }
+};
 
 
 } /* namespace matrix */

@@ -69,7 +69,9 @@ public:
 		return values[index].value_reference();
 	}
 
-	const T& operator[](unsigned index) const;
+	const T& operator[](unsigned index) const {
+		return values[index].value_reference();
+	}
 
 private:
 	storage<T, Verified> values[Size];

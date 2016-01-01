@@ -78,7 +78,9 @@ public:
 		return *value_pointer();
 	}
 
-	const T& value_reference() const;
+	const T& value_reference() const {
+		return *value_pointer();
+	}
 
 private:
 	using verifier_type = typename std::conditional<Verified, storage_verifier, null_storage_verifier>::type;
@@ -94,7 +96,11 @@ private:
 		return static_cast<T*>(p);
 	}
 
-	const T* value_pointer() const;
+	const T* value_pointer() const {
+		verify_constructed(true);
+		const void* p = &store;
+		return static_cast<const T*>(p);
+	}
 };
 
 

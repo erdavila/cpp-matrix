@@ -212,9 +212,57 @@ namespace smatrix {
 		assert(m.element_at(1, 2) == 6);
 	}
 
+	void testMatrixMatrixComparison() {
+		matrix::smatrix<int, 2, 3>  mA({ { 1, 2, 3 },
+		                                 { 4, 5, 6 } });
+
+		matrix::smatrix<char, 2, 3> mB({ { 1, 2, 3 },
+		                                 { 4, 5, 6 } });
+
+		matrix::smatrix<int, 2, 3>  mC({ { 1, 2, 3 },
+		                                 { 6, 6, 6 } });
+
+		assert(  mA == mA ); assert(!(mA != mA));
+		assert(  mA == mB ); assert(!(mA != mB));
+		assert(!(mA == mC)); assert(  mA != mC );
+	}
+
+	void testMatrixScalarComparison() {
+		matrix::smatrix<int , 1, 1> mA({ { 7 } });
+		matrix::smatrix<char, 1, 1> mB({ { 7 } });
+		matrix::smatrix<int , 1, 1> mC({ { 3 } });
+		matrix::smatrix<int , 1, 1> mD({ { 9 } });
+
+		assert(  mA == mA ); assert(!(mA != mA));
+		assert(  mA == mB ); assert(!(mA != mB));
+		assert(!(mA == mC)); assert(  mA != mC );
+		assert(!(mA == mD)); assert(  mA != mD );
+		assert(!(mA == 3));  assert(  mA != 3 );
+		assert(  mA == 7 );  assert(!(mA != 7));
+		assert(!(mA == 9));  assert(  mA != 9 );
+
+		assert(!(mA < mA));  assert(  mA >= mA );
+		assert(!(mA < mB));  assert(  mA >= mB );
+		assert(!(mA < mC));  assert(  mA >= mC );
+		assert(  mA < mD );  assert(!(mA >= mD));
+		assert(!(mA < 3));   assert(  mA >= 3 );
+		assert(!(mA < 7));   assert(  mA >= 7 );
+		assert(  mA < 9 );   assert(!(mA >= 9));
+
+		assert(!(mA > mA));  assert(  mA <= mA );
+		assert(!(mA > mB));  assert(  mA <= mB );
+		assert(  mA > mC );  assert(!(mA <= mC));
+		assert(!(mA > mD));  assert(  mA <= mD );
+		assert(  mA > 3 );   assert(!(mA <= 3));
+		assert(!(mA > 7));   assert(  mA <= 7 );
+		assert(!(mA > 9));   assert(  mA <= 9 );
+	}
+
 	void test() {
 		testBasics();
 		testArrayConstructorAndElementAt();
+		testMatrixMatrixComparison();
+		testMatrixScalarComparison();
 	}
 } /* namespace smatrix */
 
@@ -268,11 +316,73 @@ namespace dmatrix {
 		assert(m.element_at(2, 1) == 0);
 	}
 
+	void testMatrixMatrixComparison() {
+		matrix::dmatrix<int>  mA({ { 1, 2, 3 },
+		                           { 4, 5, 6 } });
+
+		matrix::dmatrix<char> mB({ { 1, 2, 3 },
+		                           { 4, 5, 6 } });
+
+		matrix::dmatrix<int>  mC({ { 1, 2, 3 },
+		                           { 6, 6, 6 } });
+
+		matrix::dmatrix<int>  mD({ { 1, 2 },
+		                           { 3, 4 },
+		                           { 5, 6 } });
+
+		assert(  mA == mA ); assert(!(mA != mA));
+		assert(  mA == mB ); assert(!(mA != mB));
+		assert(!(mA == mC)); assert(  mA != mC );
+		assert_throws((void)(mA == mD), matrix::incompatible_operands);
+		assert_throws((void)(mA != mD), matrix::incompatible_operands);
+	}
+
+	void testMatrixScalarComparison() {
+		matrix::dmatrix<int>  mA({ { 7 } });
+		matrix::dmatrix<char> mB({ { 7 } });
+		matrix::dmatrix<int>  mC({ { 3 } });
+		matrix::dmatrix<int>  mD({ { 9 } });
+		matrix::dmatrix<int>  mE({ { 1, 2, 3 },
+		                           { 4, 5, 6 } });
+
+		assert(  mA == mA ); assert(!(mA != mA));
+		assert(  mA == mB ); assert(!(mA != mB));
+		assert(!(mA == mC)); assert(  mA != mC );
+		assert(!(mA == mD)); assert(  mA != mD );
+		assert_throws((void)(mA == mE), matrix::incompatible_operands);
+		assert_throws((void)(mA != mE), matrix::incompatible_operands);
+		assert(!(mA == 3));  assert(  mA != 3 );
+		assert(  mA == 7 );  assert(!(mA != 7));
+		assert(!(mA == 9));  assert(  mA != 9 );
+
+		assert(!(mA < mA));  assert(  mA >= mA );
+		assert(!(mA < mB));  assert(  mA >= mB );
+		assert(!(mA < mC));  assert(  mA >= mC );
+		assert(  mA < mD );  assert(!(mA >= mD));
+		assert_throws((void)(mA <  mE), matrix::incompatible_operands);
+		assert_throws((void)(mA >= mE), matrix::incompatible_operands);
+		assert(!(mA < 3));   assert(  mA >= 3 );
+		assert(!(mA < 7));   assert(  mA >= 7 );
+		assert(  mA < 9 );   assert(!(mA >= 9));
+
+		assert(!(mA > mA));  assert(  mA <= mA );
+		assert(!(mA > mB));  assert(  mA <= mB );
+		assert(  mA > mC );  assert(!(mA <= mC));
+		assert(!(mA > mD));  assert(  mA <= mD );
+		assert_throws((void)(mA >  mE), matrix::incompatible_operands);
+		assert_throws((void)(mA <= mE), matrix::incompatible_operands);
+		assert(  mA > 3 );   assert(!(mA <= 3));
+		assert(!(mA > 7));   assert(  mA <= 7 );
+		assert(!(mA > 9));   assert(  mA <= 9 );
+	}
+
 	void test() {
 		testBasics();
 		testInitializerListConstructorAndElementAt();
 		testInitializerListConstructorWithMissingValues();
 		testSizesWithInitializerListConstructor();
+		testMatrixMatrixComparison();
+		testMatrixScalarComparison();
 	}
 } /* namespace dmatrix */
 

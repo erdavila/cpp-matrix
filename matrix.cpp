@@ -1,7 +1,10 @@
 #include "matrix.hpp"
+#include "safely_constructed_array.hpp"
 #include "storage.hpp"
 #include <cassert>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 
 #define assert_throws(EXPR, EXCEPTION) \
@@ -83,8 +86,105 @@ namespace storage {
 
 
 namespace safely_constructed_array {
-	void test() {
+	struct Probe {
+		char id;
+		int *p;
 
+		Probe();
+		Probe(const Probe&);
+		Probe(Probe&& p) : id(std::move(p.id)), p(p.p) {
+			if(throwing_id_on_move == p.id) {
+				log.push_back("throwing");
+				throw std::runtime_error("throwing!");
+			}
+			id += 32; // to lower case
+			*this->p += 32;
+			p.p = nullptr;
+			log.push_back(id + std::string(": move-constructed"));
+		}
+		Probe(char id) : id(id), p(new int(id - 'A')) {
+			log.push_back(id + std::string(": char-constructed"));
+		}
+		~Probe() {
+			delete p;
+			log.push_back(id + std::string(": destructed"));
+		}
+		Probe& operator=(const Probe&);
+		Probe& operator=(Probe&&);
+		Probe& operator=(char id) {
+			this->id = id;
+			*p = id - 'A';
+			log.push_back(id + std::string(": char-assigned"));
+			return *this;
+		}
+		operator char&() {
+			return id;
+		}
+		operator const char&() const;
+
+		static char throwing_id_on_move;
+		static std::vector<std::string> log;
+
+		static void reset() {
+			throwing_id_on_move = -1;
+			log.clear();
+		}
+	};
+	char Probe::throwing_id_on_move;
+	std::vector<std::string> Probe::log;
+
+	void testConstructWithProvider() {
+		auto provider = [](unsigned index) {
+			return Probe('A' + index);
+		};
+		matrix::safely_constructed_array<Probe, 3> sca(provider);
+
+		assert(sca[0] == 'a');
+		assert(sca[1] == 'b');
+		assert(sca[2] == 'c');
+	}
+
+	void testConstructWithArrayAndChangeValue() {
+		matrix::safely_constructed_array<Probe, 3> sca({ 'A', 'B', 'C' });
+
+		sca[1] = 'X';
+
+		assert(sca[0] == 'a');
+		assert(sca[1] == 'X');
+		assert(sca[2] == 'c');
+	}
+
+	void testConstructionThrowingOnMove() {
+		Probe::reset();
+		Probe::throwing_id_on_move = 'B';
+
+		try {
+			matrix::safely_constructed_array<Probe, 3> array(
+				[](unsigned index) {
+					return Probe('A' + index);
+				}
+			);
+			assert(false);
+		} catch(std::runtime_error&) {
+			Probe::log.push_back("exception caught");
+		}
+
+		assert((Probe::log == std::vector<std::string>{
+			"A: char-constructed",
+			"a: move-constructed",
+			"A: destructed",
+			"B: char-constructed",
+			"throwing",
+			"B: destructed",
+			"a: destructed",
+			"exception caught"
+		}));
+	}
+
+	void test() {
+		testConstructWithProvider();
+		testConstructWithArrayAndChangeValue();
+		testConstructionThrowingOnMove();
 	}
 } /* namespace safely_constructed_array */
 

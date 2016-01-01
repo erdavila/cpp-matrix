@@ -13,7 +13,13 @@ public:
 	using value_type = T;
 	enum { size = Size };
 
-	safely_constructed_array();
+	safely_constructed_array()
+		: safely_constructed_array(
+			[](unsigned _index) {
+				return T();
+			}
+		)
+	{}
 
 	safely_constructed_array(const safely_constructed_array&);
 

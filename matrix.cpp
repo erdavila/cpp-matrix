@@ -201,8 +201,20 @@ namespace smatrix {
 		assert(m.cols() == 3);
 	}
 
+	void testArrayConstructorAndElementAt() {
+		matrix::smatrix<int, 2, 3> m({ { 1, 2, 3 },
+		                               { 4, 5, 6 } });
+		assert(m.element_at(0, 0) == 1);
+		assert(m.element_at(0, 1) == 2);
+		assert(m.element_at(0, 2) == 3);
+		assert(m.element_at(1, 0) == 4);
+		assert(m.element_at(1, 1) == 5);
+		assert(m.element_at(1, 2) == 6);
+	}
+
 	void test() {
 		testBasics();
+		testArrayConstructorAndElementAt();
 	}
 } /* namespace smatrix */
 
@@ -217,8 +229,50 @@ namespace dmatrix {
 		assert(m.cols() == 3);
 	}
 
+	void testInitializerListConstructorAndElementAt() {
+		matrix::dmatrix<int> m({ { 1, 2, 3 },
+		                         { 4, 5, 6 } });
+		assert(m.element_at(0, 0) == 1);
+		assert(m.element_at(0, 1) == 2);
+		assert(m.element_at(0, 2) == 3);
+		assert(m.element_at(1, 0) == 4);
+		assert(m.element_at(1, 1) == 5);
+		assert(m.element_at(1, 2) == 6);
+	}
+
+	void testInitializerListConstructorWithMissingValues() {
+		matrix::dmatrix<int> m({ { 1       },
+		                         { 4, 5, 6 },
+		                         { 7, 8    }});
+
+		assert(m.element_at(0, 0) == 1);
+		assert(m.element_at(0, 1) == 0);
+		assert(m.element_at(0, 2) == 0);
+		assert(m.element_at(1, 0) == 4);
+		assert(m.element_at(1, 1) == 5);
+		assert(m.element_at(1, 2) == 6);
+		assert(m.element_at(2, 0) == 7);
+		assert(m.element_at(2, 1) == 8);
+		assert(m.element_at(2, 2) == 0);
+	}
+
+	void testSizesWithInitializerListConstructor() {
+		matrix::dmatrix<int> m(3, 2, { { 1       },
+		                               { 2, 3, 4 }});
+
+		assert(m.element_at(0, 0) == 1);
+		assert(m.element_at(0, 1) == 0);
+		assert(m.element_at(1, 0) == 2);
+		assert(m.element_at(1, 1) == 3);
+		assert(m.element_at(2, 0) == 0);
+		assert(m.element_at(2, 1) == 0);
+	}
+
 	void test() {
 		testBasics();
+		testInitializerListConstructorAndElementAt();
+		testInitializerListConstructorWithMissingValues();
+		testSizesWithInitializerListConstructor();
 	}
 } /* namespace dmatrix */
 

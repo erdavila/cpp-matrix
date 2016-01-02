@@ -294,12 +294,44 @@ namespace smatrix {
 		//assert_not_compilable(mX <= 7);
 	}
 
+	void testSingleRowSingleColumnAccess() {
+		matrix::smatrix<int, 2, 3> m({ { 1, 2, 3 },
+		                               { 4, 5, 6 } });
+
+		assert(m[1][2].rows() == 1);
+		assert(m[1][2].cols() == 1);
+		assert(m[1][2].element_at(0, 0) == 6);
+		assert((m[1][2])[0][0] == 6);
+		int& n = m[1][2];
+		assert(n == 6);
+
+		assert(m[0][0] == 1);
+		assert(m[0][1] == 2);
+		assert(m[0][2] == 3);
+		assert(m[1][0] == 4);
+		assert(m[1][1] == 5);
+		assert(m[1][2] == 6);
+
+		m[1][0] = 7;
+		m[0][1].element_at(0, 0) = 8;
+		m[1][1][0][0] = 9;
+		n = -1;
+
+		assert(m[0][0] ==  1);
+		assert(m[0][1] ==  8);
+		assert(m[0][2] ==  3);
+		assert(m[1][0] ==  7);
+		assert(m[1][1] ==  9);
+		assert(m[1][2] == -1);
+	}
+
 	void test() {
 		testBasics();
 		testArrayConstructorAndElementAt();
 		testDefaultConstructor();
 		testMatrixMatrixComparison();
 		testMatrixScalarComparison();
+		testSingleRowSingleColumnAccess();
 	}
 } /* namespace smatrix */
 
@@ -424,6 +456,38 @@ namespace dmatrix {
 		assert(!(mA > 9));   assert(  mA <= 9 );
 	}
 
+
+	void testSingleRowSingleColumnAccess() {
+		matrix::dmatrix<int> m({ { 1, 2, 3 },
+		                         { 4, 5, 6 } });
+
+		assert(m[1][2].rows() == 1);
+		assert(m[1][2].cols() == 1);
+		assert(m[1][2].element_at(0, 0) == 6);
+		assert((m[1][2])[0][0] == 6);
+		int& n = m[1][2];
+		assert(n == 6);
+
+		assert(m[0][0] == 1);
+		assert(m[0][1] == 2);
+		assert(m[0][2] == 3);
+		assert(m[1][0] == 4);
+		assert(m[1][1] == 5);
+		assert(m[1][2] == 6);
+
+		m[1][0] = 7;
+		m[0][1].element_at(0, 0) = 8;
+		m[1][1][0][0] = 9;
+		n = -1;
+
+		assert(m[0][0] ==  1);
+		assert(m[0][1] ==  8);
+		assert(m[0][2] ==  3);
+		assert(m[1][0] ==  7);
+		assert(m[1][1] ==  9);
+		assert(m[1][2] == -1);
+	}
+
 	void test() {
 		testBasics();
 		testInitializerListConstructorAndElementAt();
@@ -432,6 +496,7 @@ namespace dmatrix {
 		testDefaultConstructor();
 		testMatrixMatrixComparison();
 		testMatrixScalarComparison();
+		testSingleRowSingleColumnAccess();
 	}
 } /* namespace dmatrix */
 

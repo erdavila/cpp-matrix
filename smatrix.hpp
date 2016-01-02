@@ -2,13 +2,141 @@
 #define SMATRIX_HPP_
 
 #include "safely_constructed_array.hpp"
+#include <type_traits>
+#include <utility>
 
 
 namespace matrix {
 
 
+template <typename M>
+class static_matrix : public matrix<M> {};
+
+
+// TODO: extract common members from smatrix_rows_reference and smatrix_area_reference to a common base
+
+
+template <typename SMatrix, unsigned Rows, unsigned Cols>
+class smatrix_area_reference;
+
+
+template <typename SMatrix, unsigned Rows, unsigned Cols>
+class smatrix_rows_reference {
+private:
+	template <unsigned ARows, unsigned ACols>
+	using area_reference = smatrix_area_reference<SMatrix, ARows, ACols>;
+
+	template <unsigned ARows, unsigned ACols>
+	using const_area_reference = const smatrix_area_reference<const SMatrix, ARows, ACols>;
+
+public:
+	using element_type = typename SMatrix::element_type;
+
+	smatrix_rows_reference() = delete;
+
+	smatrix_rows_reference(const smatrix_rows_reference&);
+
+	smatrix_rows_reference(smatrix_rows_reference&&);
+
+	smatrix_rows_reference(SMatrix& smatrix, unsigned first_row, unsigned first_col)
+		: smatrix(smatrix), first_row(first_row), first_col(first_col)
+	{}
+
+	~smatrix_rows_reference() = default;
+
+	element_type& element_at(unsigned row, unsigned col) {
+		return smatrix.element_at(first_row + row, first_col + col);
+	}
+
+	const element_type& element_at(unsigned row, unsigned col) const;
+
+	area_reference<Rows, 1> operator[](unsigned col) {
+		return { smatrix, first_row, first_col + col };
+	}
+
+	//const_area_reference<Rows, 1> operator[](unsigned col) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_area_reference<const SMatrix, Rows, 1> operator[](unsigned col) const;
+
+private:
+	SMatrix& smatrix;
+	const unsigned first_row;
+	const unsigned first_col;
+};
+
+
+template <typename SMatrix, unsigned Rows, unsigned Cols>
+class smatrix_area_reference : public static_matrix<smatrix_area_reference<SMatrix, Rows, Cols>> {
+private:
+	template <unsigned RRows, unsigned RCols>
+	using rows_reference = smatrix_rows_reference<SMatrix, RRows, RCols>;
+
+	template <unsigned RRows, unsigned RCols>
+	using const_rows_reference = const smatrix_rows_reference<const SMatrix, RRows, RCols>;
+
+public:
+	using element_type = typename SMatrix::element_type;
+
+	static constexpr unsigned rows() noexcept { return Rows; }
+	static constexpr unsigned cols() noexcept { return Cols; }
+
+	smatrix_area_reference() = delete;
+
+	smatrix_area_reference(const smatrix_area_reference&);
+
+	smatrix_area_reference(smatrix_area_reference&&);
+
+	smatrix_area_reference(SMatrix& smatrix, unsigned first_row, unsigned first_col)
+		: smatrix(smatrix), first_row(first_row), first_col(first_col)
+	{}
+
+	~smatrix_area_reference() = default;
+
+	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
+	operator=(const element_type&);
+
+	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
+	operator=(element_type&& value) {
+		element_at(0, 0) = std::move(value);
+		return *this;
+	}
+
+	element_type& element_at(unsigned row, unsigned col) {
+		return smatrix.element_at(first_row + row, first_col + col);
+	}
+
+	const element_type& element_at(unsigned row, unsigned col) const {
+		return smatrix.element_at(first_row + row, first_col + col);
+	}
+
+	rows_reference<1, Cols> operator[](unsigned row) {
+		return { smatrix, first_row + row, first_col };
+	}
+
+	//const_rows_reference<1, Cols> operator[](unsigned row) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_rows_reference<const SMatrix, 1, Cols> operator[](unsigned row) const;
+
+	operator typename std::enable_if<Rows==1 && Cols==1, element_type>::type&() {
+		return element_at(0, 0);
+	}
+
+	operator const typename std::enable_if<Rows==1 && Cols==1, element_type>::type&() const;
+
+private:
+	SMatrix& smatrix;
+	const unsigned first_row;
+	const unsigned first_col;
+};
+
+
 template <typename T, unsigned Rows, unsigned Cols>
-class smatrix {
+class smatrix : public static_matrix<smatrix<T, Rows, Cols>> {
+private:
+	template <unsigned RRows, unsigned RCols>
+	using rows_reference = smatrix_rows_reference<smatrix, RRows, RCols>;
+
+	template <unsigned RRows, unsigned RCols>
+	using const_rows_reference = const smatrix_rows_reference<const smatrix, RRows, RCols>;
+
 public:
 	using element_type = T;
 
@@ -58,6 +186,13 @@ public:
 		return elements[index];
 	}
 
+	rows_reference<1, Cols> operator[](unsigned row) {
+		return { *this, row, 0 };
+	}
+
+	//const_rows_reference<1, Cols> operator[](unsigned row) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_rows_reference<const smatrix, 1, Cols> operator[](unsigned row) const;
+
 private:
 	safely_constructed_array<T, Rows * Cols> elements;
 
@@ -81,9 +216,16 @@ inline void static_assert_smatrix_same_shape() {
 	static_assert(RowsL == RowsR  &&  ColsL == ColsR, "Both smatrices must have the same shape for this operation");
 }
 
+// TODO: replace all uses of this with static_assert_static_matrix_1x1
 template <unsigned Rows, unsigned Cols>
+[[deprecated]]
 inline void static_assert_smatrix_1x1() {
 	static_assert(Rows == 1  &&  Cols == 1, "The smatrix must be 1x1 for this operation");
+}
+
+template <typename M>
+inline void static_assert_static_matrix_1x1() {
+	static_assert(M::rows() == 1  &&  M::cols() == 1, "The smatrix must be 1x1 for this operation");
 }
 
 
@@ -94,11 +236,11 @@ bool operator==(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, C
 	return equal_to(lhs, rhs);
 }
 
-template <typename T, unsigned Rows, unsigned Cols>
+template <typename M>
 inline
-bool operator==(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
-	static_assert_smatrix_1x1<Rows, Cols>();
-	return lhs.element_at(0, 0) == rhs;
+bool operator==(const static_matrix<M>& lhs, const typename M::element_type& rhs) {
+	static_assert_static_matrix_1x1<M>();
+	return element_at(lhs, 0, 0) == rhs;
 }
 
 template <typename T, unsigned Rows, unsigned Cols>

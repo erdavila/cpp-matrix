@@ -76,134 +76,133 @@ private:
 };
 
 
-template <typename TL, typename TR, unsigned Rows, unsigned Cols>
-bool operator==(const smatrix<TL, Rows, Cols>& lhs, const smatrix<TR, Rows, Cols>& rhs) {
-	for(unsigned row = 0; row < Rows; ++row) {
-		for(unsigned col = 0; col < Cols; ++col) {
-			if(lhs.element_at(row, col) != rhs.element_at(row, col)) {
-				return false;
-			}
-		}
-	}
-	return true;
+template <unsigned RowsL, unsigned ColsL, unsigned RowsR, unsigned ColsR>
+inline void static_assert_smatrix_same_shape() {
+	static_assert(RowsL == RowsR  &&  ColsL == ColsR, "Both smatrices must have the same shape for this operation");
 }
 
-template <typename TL, typename TR>
-inline
-bool operator==(const smatrix<TL, 1, 1>& lhs, const smatrix<TR, 1, 1>& rhs) {
-	return lhs.element_at(0, 0) == rhs.element_at(0, 0);
+template <unsigned Rows, unsigned Cols>
+inline void static_assert_smatrix_1x1() {
+	static_assert(Rows == 1  &&  Cols == 1, "The smatrix must be 1x1 for this operation");
 }
 
-template <typename T>
+
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
-bool operator==(const smatrix<T, 1, 1>& lhs, const T& rhs) {
+bool operator==(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
+	static_assert_smatrix_same_shape<RowsL, ColsL, RowsR, ColsR>();
+	return equal_to(lhs, rhs);
+}
+
+template <typename T, unsigned Rows, unsigned Cols>
+inline
+bool operator==(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
+	static_assert_smatrix_1x1<Rows, Cols>();
 	return lhs.element_at(0, 0) == rhs;
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator==(const T& lhs, const smatrix<T, 1, 1>& rhs) {
+bool operator==(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
 	return rhs == lhs;
 }
 
 
-template <typename TL, typename TR, unsigned Rows, unsigned Cols>
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
-bool operator!=(const smatrix<TL, Rows, Cols>& lhs, const smatrix<TR, Rows, Cols>& rhs) {
+bool operator!=(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
 	return !(lhs == rhs);
 }
 
-template <typename TL, typename TR>
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR>
 inline
-bool operator!=(const smatrix<TL, 1, 1>& lhs, const smatrix<TR, 1, 1>& rhs) {
+bool operator!=(const smatrix<TL, RowsL, ColsL>& lhs, const TR& rhs) {
 	return !(lhs == rhs);
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator!=(const smatrix<T, 1, 1>& lhs, const T& rhs) {
-	return !(lhs == rhs);
-}
-
-template <typename T>
-inline
-bool operator!=(const T& lhs, const smatrix<T, 1, 1>& rhs) {
+bool operator!=(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
 	return !(lhs == rhs);
 }
 
 
-template <typename TL, typename TR>
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
-bool operator<(const smatrix<TL, 1, 1>& lhs, const smatrix<TR, 1, 1>& rhs) {
+bool operator<(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
+	static_assert_smatrix_1x1<RowsL, ColsL>();
+	static_assert_smatrix_1x1<RowsR, ColsR>();
 	return lhs.element_at(0, 0) < rhs.element_at(0, 0);
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator<(const smatrix<T, 1, 1>& lhs, const T& rhs) {
+bool operator<(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
+	static_assert_smatrix_1x1<Rows, Cols>();
 	return lhs.element_at(0, 0) < rhs;
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator<(const T& lhs, const smatrix<T, 1, 1>& rhs) {
+bool operator<(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
+	static_assert_smatrix_1x1<Rows, Cols>();
 	return lhs < rhs.element_at(0, 0);
 }
 
 
-template <typename TL, typename TR>
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
-bool operator>(const smatrix<TL, 1, 1>& lhs, const smatrix<TR, 1, 1>& rhs) {
+bool operator>(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
 	return rhs < lhs;
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator>(const smatrix<T, 1, 1>& lhs, const T& rhs) {
+bool operator>(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
 	return rhs < lhs;
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator>(const T& lhs, const smatrix<T, 1, 1>& rhs) {
+bool operator>(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
 	return rhs < lhs;
 }
 
 
-template <typename TL, typename TR>
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
-bool operator<=(const smatrix<TL, 1, 1>& lhs, const smatrix<TR, 1, 1>& rhs) {
+bool operator<=(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
 	return !(lhs > rhs);
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator<=(const smatrix<T, 1, 1>& lhs, const T& rhs) {
+bool operator<=(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
 	return !(lhs > rhs);
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator<=(const T& lhs, const smatrix<T, 1, 1>& rhs) {
+bool operator<=(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
 	return !(lhs > rhs);
 }
 
 
-template <typename TL, typename TR>
+template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
-bool operator>=(const smatrix<TL, 1, 1>& lhs, const smatrix<TR, 1, 1>& rhs) {
+bool operator>=(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
 	return !(lhs < rhs);
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator>=(const smatrix<T, 1, 1>& lhs, const T& rhs) {
+bool operator>=(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
 	return !(lhs < rhs);
 }
 
-template <typename T>
+template <typename T, unsigned Rows, unsigned Cols>
 inline
-bool operator>=(const T& lhs, const smatrix<T, 1, 1>& rhs) {
+bool operator>=(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
 	return !(lhs < rhs);
 }
 

@@ -12,7 +12,7 @@ namespace matrix {
 
 class storage_verifier {
 public:
-	class exception : std::logic_error {
+	class exception : public std::logic_error {
 		using std::logic_error::logic_error;
 	};
 

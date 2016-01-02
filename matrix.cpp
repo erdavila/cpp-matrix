@@ -15,6 +15,9 @@
 		assert(true); \
 	}
 
+#define assert_not_compilable(EXPR) \
+	assert(false); EXPR;
+
 
 namespace storage {
 	template <typename T>
@@ -225,6 +228,13 @@ namespace smatrix {
 		assert(  mA == mA ); assert(!(mA != mA));
 		assert(  mA == mB ); assert(!(mA != mB));
 		assert(!(mA == mC)); assert(  mA != mC );
+
+
+		matrix::smatrix<int, 3, 2> mX({ { 1, 2 },
+		                                { 3, 4 },
+		                                { 5, 6 } });
+		//assert_not_compilable(mA == mX);
+		//assert_not_compilable(mA != mX);
 	}
 
 	void testMatrixScalarComparison() {
@@ -233,6 +243,10 @@ namespace smatrix {
 		matrix::smatrix<int , 1, 1> mC({ { 3 } });
 		matrix::smatrix<int , 1, 1> mD({ { 9 } });
 
+		matrix::smatrix<int , 3, 2> mX({ { 1, 2 },
+		                                 { 3, 4 },
+		                                 { 5, 6 } });
+
 		assert(  mA == mA ); assert(!(mA != mA));
 		assert(  mA == mB ); assert(!(mA != mB));
 		assert(!(mA == mC)); assert(  mA != mC );
@@ -240,6 +254,10 @@ namespace smatrix {
 		assert(!(mA == 3));  assert(  mA != 3 );
 		assert(  mA == 7 );  assert(!(mA != 7));
 		assert(!(mA == 9));  assert(  mA != 9 );
+		//assert_not_compilable(mX == mA);
+		//assert_not_compilable(mX != mA);
+		//assert_not_compilable(mX == 7);
+		//assert_not_compilable(mX != 7);
 
 		assert(!(mA < mA));  assert(  mA >= mA );
 		assert(!(mA < mB));  assert(  mA >= mB );
@@ -248,6 +266,10 @@ namespace smatrix {
 		assert(!(mA < 3));   assert(  mA >= 3 );
 		assert(!(mA < 7));   assert(  mA >= 7 );
 		assert(  mA < 9 );   assert(!(mA >= 9));
+		//assert_not_compilable(mX <  mA);
+		//assert_not_compilable(mX >= mA);
+		//assert_not_compilable(mX <  7);
+		//assert_not_compilable(mX >= 7);
 
 		assert(!(mA > mA));  assert(  mA <= mA );
 		assert(!(mA > mB));  assert(  mA <= mB );
@@ -256,6 +278,10 @@ namespace smatrix {
 		assert(  mA > 3 );   assert(!(mA <= 3));
 		assert(!(mA > 7));   assert(  mA <= 7 );
 		assert(!(mA > 9));   assert(  mA <= 9 );
+		//assert_not_compilable(mX >  mA);
+		//assert_not_compilable(mX <= mA);
+		//assert_not_compilable(mX >  7);
+		//assert_not_compilable(mX <= 7);
 	}
 
 	void test() {
@@ -421,43 +447,43 @@ namespace common {
 		matrix::smatrix<int, 1, 1> smA({ { 7 } });
 		matrix::smatrix<int, 1, 1> smB({ { 3 } });
 		matrix::smatrix<int, 1, 1> smC({ { 9 } });
-		matrix::smatrix<int, 2, 3> smD({ { 1, 2, 3 },
+		matrix::smatrix<int, 2, 3> smX({ { 1, 2, 3 },
 		                                 { 4, 5, 6 } });
 		matrix::dmatrix<char> dmA({ { 7 } });
 		matrix::dmatrix<char> dmB({ { 3 } });
 		matrix::dmatrix<char> dmC({ { 9 } });
-		matrix::dmatrix<char> dmD({ { 1, 2, 3 },
+		matrix::dmatrix<char> dmX({ { 1, 2, 3 },
 		                            { 4, 5, 6 } });
 
 		assert(  smA == dmA);  assert(!(smA != dmA));
 		assert(!(smA == dmB)); assert(  smA != dmB );
 		assert(!(smA == dmC)); assert(  smA != dmC );
-		assert_throws(static_cast<void>(smA == dmD), matrix::incompatible_operands);
-		assert_throws(static_cast<void>(smA != dmD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA == dmX), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA != dmX), matrix::incompatible_operands);
 		assert(!(dmA == smB)); assert(  dmA != smB );
 		assert(!(dmA == smC)); assert(  dmA != smC );
-		assert_throws(static_cast<void>(dmA == smD), matrix::incompatible_operands);
-		assert_throws(static_cast<void>(dmA != smD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA == smX), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA != smX), matrix::incompatible_operands);
 
 		assert(!(smA < dmA)); assert(  smA >= dmA );
 		assert(!(smA < dmB)); assert(  smA >= dmB );
 		assert(  smA < dmC ); assert(!(smA >= dmC));
-		assert_throws(static_cast<void>(smA <  dmD), matrix::incompatible_operands);
-		assert_throws(static_cast<void>(smA >= dmD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA <  dmX), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA >= dmX), matrix::incompatible_operands);
 		assert(!(dmA < smB)); assert(  dmA >= smB );
 		assert(  dmA < smC ); assert(!(dmA >= smC));
-		assert_throws(static_cast<void>(dmA <  smD), matrix::incompatible_operands);
-		assert_throws(static_cast<void>(dmA >= smD), matrix::incompatible_operands);
+		//assert_not_compilable(dmA <  smX);
+		//assert_not_compilable(dmA >= smX);
 
 		assert(!(smA > dmA)); assert(  smA <= dmA );
 		assert(  smA > dmB ); assert(!(smA <= dmB));
 		assert(!(smA > dmC)); assert(  smA <= dmC );
-		assert_throws(static_cast<void>(smA >  dmD), matrix::incompatible_operands);
-		assert_throws(static_cast<void>(smA <= dmD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA >  dmX), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA <= dmX), matrix::incompatible_operands);
 		assert(  dmA > smB ); assert(!(dmA <= smB));
 		assert(!(dmA > smC)); assert(  dmA <= smC );
-		assert_throws(static_cast<void>(dmA >  smD), matrix::incompatible_operands);
-		assert_throws(static_cast<void>(dmA <= smD), matrix::incompatible_operands);
+		//assert_not_compilable(dmA >  smX);
+		//assert_not_compilable(dmA <= smX);
 	}
 
 	void test() {

@@ -388,8 +388,81 @@ namespace dmatrix {
 
 
 namespace common {
-	void test() {
+	void testSMatrixDMatrixComparison() {
+		matrix::smatrix<int, 2, 3> smA({ { 1, 2, 3 },
+		                                 { 4, 5, 6 } });
 
+		matrix::smatrix<int, 2, 3> smB({ { 1, 2, 3 },
+		                                 { 6, 6, 6 } });
+
+		matrix::smatrix<int, 3, 2> smC({ { 1, 2 },
+		                                 { 3, 4 },
+		                                 { 5, 6 } });
+
+		matrix::dmatrix<char> dmA({ { 1, 2, 3 },
+		                            { 4, 5, 6 } });
+
+		matrix::dmatrix<char> dmB({ { 1, 2, 3 },
+		                            { 6, 6, 6 } });
+
+		matrix::dmatrix<char> dmC({ { 1, 2 },
+		                            { 3, 4 },
+		                            { 5, 6 } });
+
+		assert(  smA == dmA);  assert(!(smA != dmA));
+		assert(!(smA == dmB)); assert(  smA != dmB);
+		assert_throws(static_cast<void>(smA == dmC), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA != dmC), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA == smC), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA != smC), matrix::incompatible_operands);
+	}
+
+	void testScalarSMatrixDMatrixComparison() {
+		matrix::smatrix<int, 1, 1> smA({ { 7 } });
+		matrix::smatrix<int, 1, 1> smB({ { 3 } });
+		matrix::smatrix<int, 1, 1> smC({ { 9 } });
+		matrix::smatrix<int, 2, 3> smD({ { 1, 2, 3 },
+		                                 { 4, 5, 6 } });
+		matrix::dmatrix<char> dmA({ { 7 } });
+		matrix::dmatrix<char> dmB({ { 3 } });
+		matrix::dmatrix<char> dmC({ { 9 } });
+		matrix::dmatrix<char> dmD({ { 1, 2, 3 },
+		                            { 4, 5, 6 } });
+
+		assert(  smA == dmA);  assert(!(smA != dmA));
+		assert(!(smA == dmB)); assert(  smA != dmB );
+		assert(!(smA == dmC)); assert(  smA != dmC );
+		assert_throws(static_cast<void>(smA == dmD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA != dmD), matrix::incompatible_operands);
+		assert(!(dmA == smB)); assert(  dmA != smB );
+		assert(!(dmA == smC)); assert(  dmA != smC );
+		assert_throws(static_cast<void>(dmA == smD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA != smD), matrix::incompatible_operands);
+
+		assert(!(smA < dmA)); assert(  smA >= dmA );
+		assert(!(smA < dmB)); assert(  smA >= dmB );
+		assert(  smA < dmC ); assert(!(smA >= dmC));
+		assert_throws(static_cast<void>(smA <  dmD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA >= dmD), matrix::incompatible_operands);
+		assert(!(dmA < smB)); assert(  dmA >= smB );
+		assert(  dmA < smC ); assert(!(dmA >= smC));
+		assert_throws(static_cast<void>(dmA <  smD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA >= smD), matrix::incompatible_operands);
+
+		assert(!(smA > dmA)); assert(  smA <= dmA );
+		assert(  smA > dmB ); assert(!(smA <= dmB));
+		assert(!(smA > dmC)); assert(  smA <= dmC );
+		assert_throws(static_cast<void>(smA >  dmD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(smA <= dmD), matrix::incompatible_operands);
+		assert(  dmA > smB ); assert(!(dmA <= smB));
+		assert(!(dmA > smC)); assert(  dmA <= smC );
+		assert_throws(static_cast<void>(dmA >  smD), matrix::incompatible_operands);
+		assert_throws(static_cast<void>(dmA <= smD), matrix::incompatible_operands);
+	}
+
+	void test() {
+		testSMatrixDMatrixComparison();
+		testScalarSMatrixDMatrixComparison();
 	}
 } /* namespace common */
 

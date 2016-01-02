@@ -107,47 +107,62 @@ private:
 
 class incompatible_operands : std::invalid_argument {
 public:
-	template <typename TL, typename TR>
-	static void throw_if_incompatible(const dmatrix<TL>& lhs, const std::string& operation, const dmatrix<TR>& rhs) {
+	template <typename ML, typename MR>
+	static void throw_if_unmatching_dimensions(const ML& lhs, const std::string& operation, const MR& rhs) {
 		if(lhs.rows() != rhs.rows()  ||  lhs.cols() != rhs.cols()) {
-			throw incompatible_operands("dmatrix" + dimensions(lhs), operation, "dmatrix" + dimensions(rhs));
+			throw incompatible_operands(lhs, operation, rhs);
 		}
 	}
 
 	template <typename TL>
 	static void throw_if_not_scalar_matrix_at_left(const dmatrix<TL>& lhs, const std::string& operation) {
 		if(!is_scalar_matrix(lhs)) {
-			throw incompatible_operands("dmatrix" + dimensions(lhs), operation, "scalar");
+			throw incompatible_operands(lhs, operation, "scalar");
 		}
 	}
 
 	template <typename TR>
 	static void throw_if_not_scalar_matrix_at_right(const std::string& operation, const dmatrix<TR>& rhs) {
 		if(!is_scalar_matrix(rhs)) {
-			throw incompatible_operands("scalar", operation, "dmatrix" + dimensions(rhs));
+			throw incompatible_operands("scalar", operation, rhs);
 		}
 	}
 
 	template <typename TL, typename TR>
 	static void throw_if_not_scalar_matrices(const dmatrix<TL>& lhs, const std::string& operation, const dmatrix<TR>& rhs) {
 		if(!is_scalar_matrix(lhs)  ||  !is_scalar_matrix(rhs)) {
-			throw incompatible_operands("dmatrix" + dimensions(lhs), operation, "dmatrix" + dimensions(rhs));
+			throw incompatible_operands(lhs, operation, rhs);
 		}
 	}
 
-private:
-	incompatible_operands(const std::string& lhs, const std::string& operation, const std::string& rhs)
-		: invalid_argument(lhs + ' ' + operation + ' ' + rhs)
+	template <typename TL, typename TR>
+	incompatible_operands(const TL& lhs, const std::string& operation, const TR& rhs)
+		: invalid_argument(type(lhs) + ' ' + operation + ' ' + type(rhs))
 	{}
 
+private:
 	template <typename T>
 	static bool is_scalar_matrix(const dmatrix<T>& m) noexcept {
 		return (m.rows() == 1  &&  m.cols() == 1);
 	}
 
-	template <typename T>
-	static std::string dimensions(const dmatrix<T>& m) {
+	template <typename M>
+	static std::string dimensions(const M& m) {
 		return '[' + std::to_string(m.rows()) + 'x' + std::to_string(m.cols()) + ']';
+	}
+
+	template <typename T>
+	static std::string type(const dmatrix<T>& m) {
+		return "dmatrix" + dimensions(m);
+	}
+
+	template <typename T, unsigned Rows, unsigned Cols>
+	static std::string type(const smatrix<T, Rows, Cols>& m) {
+		return "smatrix" + dimensions(m);
+	}
+
+	static std::string type(const std::string& s) {
+		return s;
 	}
 };
 
@@ -168,7 +183,7 @@ bool equal_to(const ML& lhs, const MR& rhs, unsigned rows, unsigned cols) {
 template <typename TL, typename TR>
 inline
 bool operator==(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
-	incompatible_operands::throw_if_incompatible(lhs, "==", rhs);
+	incompatible_operands::throw_if_unmatching_dimensions(lhs, "==", rhs);
 	return equal_to(lhs, rhs, lhs.rows(), rhs.cols());
 }
 
@@ -190,7 +205,7 @@ bool operator==(const T& lhs, const dmatrix<T>& rhs) {
 template <typename TL, typename TR>
 inline
 bool operator!=(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
-	incompatible_operands::throw_if_incompatible(lhs, "!=", rhs);
+	incompatible_operands::throw_if_unmatching_dimensions(lhs, "!=", rhs);
 	return !equal_to(lhs, rhs, lhs.rows(), lhs.cols());
 }
 

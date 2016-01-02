@@ -215,6 +215,16 @@ namespace smatrix {
 		assert(m.element_at(1, 2) == 6);
 	}
 
+	void testDefaultConstructor() {
+		matrix::smatrix<int, 2, 3> m;
+		assert(m.element_at(0, 0) == 0);
+		assert(m.element_at(0, 1) == 0);
+		assert(m.element_at(0, 2) == 0);
+		assert(m.element_at(1, 0) == 0);
+		assert(m.element_at(1, 1) == 0);
+		assert(m.element_at(1, 2) == 0);
+	}
+
 	void testMatrixMatrixComparison() {
 		matrix::smatrix<int, 2, 3>  mA({ { 1, 2, 3 },
 		                                 { 4, 5, 6 } });
@@ -287,6 +297,7 @@ namespace smatrix {
 	void test() {
 		testBasics();
 		testArrayConstructorAndElementAt();
+		testDefaultConstructor();
 		testMatrixMatrixComparison();
 		testMatrixScalarComparison();
 	}
@@ -338,6 +349,17 @@ namespace dmatrix {
 		assert(m.element_at(0, 1) == 0);
 		assert(m.element_at(1, 0) == 2);
 		assert(m.element_at(1, 1) == 3);
+		assert(m.element_at(2, 0) == 0);
+		assert(m.element_at(2, 1) == 0);
+	}
+
+	void testDefaultConstructor() {
+		matrix::dmatrix<int> m(3, 2);
+
+		assert(m.element_at(0, 0) == 0);
+		assert(m.element_at(0, 1) == 0);
+		assert(m.element_at(1, 0) == 0);
+		assert(m.element_at(1, 1) == 0);
 		assert(m.element_at(2, 0) == 0);
 		assert(m.element_at(2, 1) == 0);
 	}
@@ -407,6 +429,7 @@ namespace dmatrix {
 		testInitializerListConstructorAndElementAt();
 		testInitializerListConstructorWithMissingValues();
 		testSizesWithInitializerListConstructor();
+		testDefaultConstructor();
 		testMatrixMatrixComparison();
 		testMatrixScalarComparison();
 	}

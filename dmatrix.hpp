@@ -27,7 +27,7 @@ public:
 	dmatrix(const dmatrix<U>&);
 
 	dmatrix(unsigned rows, unsigned cols)
-		: _rows(rows), _cols(cols)
+		: dmatrix(rows, cols, {})
 	{}
 
 	dmatrix(unsigned rows, unsigned cols, std::initializer_list<std::initializer_list<T>> values)

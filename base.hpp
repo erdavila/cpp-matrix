@@ -43,11 +43,10 @@ element_at(const matrix<M>& m, unsigned row, unsigned col) {
 
 
 template <typename ML, typename MR>
-// TODO: replace arguments with matrix<T>
-bool equal_to(const ML& lhs, const MR& rhs) {
-	for(unsigned row = 0; row < lhs.rows(); ++row) {
-		for(unsigned col = 0; col < lhs.cols(); ++col) {
-			if(lhs.element_at(row, col) != rhs.element_at(row, col)) {
+bool equal_to(const matrix<ML>& lhs, const matrix<MR>& rhs) {
+	for(unsigned row = 0; row < rows(lhs); ++row) {
+		for(unsigned col = 0; col < cols(lhs); ++col) {
+			if(element_at(lhs, row, col) != element_at(rhs, row, col)) {
 				return false;
 			}
 		}

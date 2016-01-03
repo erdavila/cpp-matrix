@@ -17,88 +17,28 @@ template <typename M>
 class dynamic_matrix : public matrix<M> {};
 
 
-// TODO: extract common members from dmatrix_rows_reference and dmatrix_area_reference to a common base
-
-
 template <typename DMatrix>
-class dmatrix_area_reference;
-
-
-template <typename DMatrix>
-class dmatrix_rows_reference {
-private:
-	using area_reference = dmatrix_area_reference<DMatrix>;
-	using const_area_reference = const dmatrix_area_reference<const DMatrix>;
-
+class dmatrix_region_reference_base {
 public:
 	using element_type = typename DMatrix::element_type;
 
-	dmatrix_rows_reference() = delete;
+	dmatrix_region_reference_base() = delete;
 
-	dmatrix_rows_reference(const dmatrix_rows_reference&);
+	dmatrix_region_reference_base(const dmatrix_region_reference_base&);
 
-	dmatrix_rows_reference(dmatrix_rows_reference&&);
+	dmatrix_region_reference_base(dmatrix_region_reference_base&&);
 
-	dmatrix_rows_reference(DMatrix& dmatrix, unsigned rows, unsigned cols,
-	                       unsigned first_row, unsigned first_col)
+	dmatrix_region_reference_base(
+		DMatrix& dmatrix,
+		unsigned rows, unsigned cols,
+		unsigned first_row, unsigned first_col
+	)
 		: dmatrix(dmatrix),
 		  _rows(rows), _cols(cols),
 		  first_row(first_row), first_col(first_col)
 	{}
 
-	~dmatrix_rows_reference() = default;
-
-	element_type& element_at(unsigned row, unsigned col) {
-		return dmatrix.element_at(first_row + row, first_col + col);
-	}
-
-	const element_type& element_at(unsigned row, unsigned col) const;
-
-	area_reference operator[](unsigned col) {
-		return { dmatrix, _rows, 1, first_row, first_col + col };
-	}
-
-	const_area_reference operator[](unsigned col) const;
-
-private:
-	DMatrix& dmatrix;
-	const unsigned _rows;
-	const unsigned _cols;
-	const unsigned first_row;
-	const unsigned first_col;
-};
-
-
-template <typename DMatrix>
-class dmatrix_area_reference : public dynamic_matrix<dmatrix_area_reference<DMatrix>> {
-private:
-	using rows_reference = dmatrix_rows_reference<DMatrix>;
-	using const_rows_reference = const dmatrix_rows_reference<const DMatrix>;
-
-public:
-	using element_type = typename DMatrix::element_type;
-
-	dmatrix_area_reference() = delete;
-
-	dmatrix_area_reference(const dmatrix_area_reference&);
-
-	dmatrix_area_reference(dmatrix_area_reference&&);
-
-	dmatrix_area_reference(DMatrix& dmatrix, unsigned rows, unsigned cols,
-	                       unsigned first_row, unsigned first_col)
-		: dmatrix(dmatrix),
-		  _rows(rows), _cols(cols),
-		  first_row(first_row), first_col(first_col)
-	{}
-
-	~dmatrix_area_reference() = default;
-
-	dmatrix_area_reference& operator=(const element_type&);
-
-	dmatrix_area_reference& operator=(element_type&& value) {
-		element_at(0, 0) = std::move(value);
-		return *this;
-	}
+	~dmatrix_region_reference_base() = default;
 
 	unsigned rows() const noexcept { return _rows; };
 
@@ -112,24 +52,78 @@ public:
 		return dmatrix.element_at(first_row + row, first_col + col);
 	}
 
-	rows_reference operator[](unsigned row) {
-		return { dmatrix, 1, _cols, first_row + row, first_col };
-	}
-
-	const rows_reference operator[](unsigned row) const;
-
-	operator element_type&() {
-		return element_at(0, 0);
-	}
-
-	operator const element_type&() const;
-
-private:
+protected:
 	DMatrix& dmatrix;
 	const unsigned _rows;
 	const unsigned _cols;
 	const unsigned first_row;
 	const unsigned first_col;
+};
+
+
+template <typename DMatrix>
+class dmatrix_area_reference;
+
+
+template <typename DMatrix>
+class dmatrix_rows_reference : public dmatrix_region_reference_base<DMatrix> {
+private:
+	using area_reference = dmatrix_area_reference<DMatrix>;
+	using const_area_reference = const dmatrix_area_reference<const DMatrix>;
+
+	using base = dmatrix_region_reference_base<DMatrix>;
+	using base::base;  // Inherit constructors
+
+public:
+	area_reference operator[](unsigned col) {
+		return {
+			this->dmatrix,
+			this->_rows, 1,
+			this->first_row, this->first_col + col
+		};
+	}
+
+	const_area_reference operator[](unsigned col) const;
+};
+
+
+template <typename DMatrix>
+class dmatrix_area_reference
+	: public dynamic_matrix<dmatrix_area_reference<DMatrix>>,
+	  public dmatrix_region_reference_base<DMatrix>
+{
+private:
+	using rows_reference = dmatrix_rows_reference<DMatrix>;
+	using const_rows_reference = const dmatrix_rows_reference<const DMatrix>;
+
+	using base = dmatrix_region_reference_base<DMatrix>;
+	using base::base;  // Inherit constructors
+
+public:
+	using typename base::element_type;
+
+	dmatrix_area_reference& operator=(const element_type&);
+
+	dmatrix_area_reference& operator=(element_type&& value) {
+		this->element_at(0, 0) = std::move(value);
+		return *this;
+	}
+
+	rows_reference operator[](unsigned row) {
+		return {
+			this->dmatrix,
+			1, this->_cols,
+			this->first_row + row, this->first_col
+		};
+	}
+
+	const rows_reference operator[](unsigned row) const;
+
+	operator element_type&() {
+		return this->element_at(0, 0);
+	}
+
+	operator const element_type&() const;
 };
 
 
@@ -239,9 +233,8 @@ private:
 class incompatible_operands : public std::invalid_argument {
 public:
 	template <typename ML, typename MR>
-	// TODO: use matrix<M> arguments
-	static void throw_if_not_same_shape(const ML& lhs, const std::string& operation, const MR& rhs) {
-		if(lhs.rows() != rhs.rows()  ||  lhs.cols() != rhs.cols()) {
+	static void throw_if_not_same_shape(const matrix<ML>& lhs, const std::string& operation, const matrix<MR>& rhs) {
+		if(rows(lhs) != rows(rhs)  ||  cols(lhs) != cols(rhs)) {
 			throw incompatible_operands(lhs, operation, rhs);
 		}
 	}
@@ -281,6 +274,11 @@ private:
 	template <typename M>
 	static std::string dimensions(const matrix<M>& m) {
 		return '[' + std::to_string(rows(m)) + 'x' + std::to_string(cols(m)) + ']';
+	}
+
+	template <typename M>
+	static std::string type_string(const matrix<M>& m) {
+		return type_string(concrete_matrix(m));
 	}
 
 	template <typename M>

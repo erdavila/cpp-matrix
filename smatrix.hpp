@@ -13,92 +13,22 @@ template <typename M>
 class static_matrix : public matrix<M> {};
 
 
-// TODO: extract common members from smatrix_rows_reference and smatrix_area_reference to a common base
-
-
 template <typename SMatrix, unsigned Rows, unsigned Cols>
-class smatrix_area_reference;
-
-
-template <typename SMatrix, unsigned Rows, unsigned Cols>
-class smatrix_rows_reference {
-private:
-	template <unsigned ARows, unsigned ACols>
-	using area_reference = smatrix_area_reference<SMatrix, ARows, ACols>;
-
-	template <unsigned ARows, unsigned ACols>
-	using const_area_reference = const smatrix_area_reference<const SMatrix, ARows, ACols>;
-
+class smatrix_region_reference_base {
 public:
 	using element_type = typename SMatrix::element_type;
 
-	smatrix_rows_reference() = delete;
+	smatrix_region_reference_base() = delete;
 
-	smatrix_rows_reference(const smatrix_rows_reference&);
+	smatrix_region_reference_base(const smatrix_region_reference_base&);
 
-	smatrix_rows_reference(smatrix_rows_reference&&);
+	smatrix_region_reference_base(smatrix_region_reference_base&&);
 
-	smatrix_rows_reference(SMatrix& smatrix, unsigned first_row, unsigned first_col)
+	smatrix_region_reference_base(SMatrix& smatrix, unsigned first_row, unsigned first_col)
 		: smatrix(smatrix), first_row(first_row), first_col(first_col)
 	{}
 
-	~smatrix_rows_reference() = default;
-
-	element_type& element_at(unsigned row, unsigned col) {
-		return smatrix.element_at(first_row + row, first_col + col);
-	}
-
-	const element_type& element_at(unsigned row, unsigned col) const;
-
-	area_reference<Rows, 1> operator[](unsigned col) {
-		return { smatrix, first_row, first_col + col };
-	}
-
-	//const_area_reference<Rows, 1> operator[](unsigned col) const; //  <-- This line makes GCC 4.8.4 crash!
-	const smatrix_area_reference<const SMatrix, Rows, 1> operator[](unsigned col) const;
-
-private:
-	SMatrix& smatrix;
-	const unsigned first_row;
-	const unsigned first_col;
-};
-
-
-template <typename SMatrix, unsigned Rows, unsigned Cols>
-class smatrix_area_reference : public static_matrix<smatrix_area_reference<SMatrix, Rows, Cols>> {
-private:
-	template <unsigned RRows, unsigned RCols>
-	using rows_reference = smatrix_rows_reference<SMatrix, RRows, RCols>;
-
-	template <unsigned RRows, unsigned RCols>
-	using const_rows_reference = const smatrix_rows_reference<const SMatrix, RRows, RCols>;
-
-public:
-	using element_type = typename SMatrix::element_type;
-
-	static constexpr unsigned rows() noexcept { return Rows; }
-	static constexpr unsigned cols() noexcept { return Cols; }
-
-	smatrix_area_reference() = delete;
-
-	smatrix_area_reference(const smatrix_area_reference&);
-
-	smatrix_area_reference(smatrix_area_reference&&);
-
-	smatrix_area_reference(SMatrix& smatrix, unsigned first_row, unsigned first_col)
-		: smatrix(smatrix), first_row(first_row), first_col(first_col)
-	{}
-
-	~smatrix_area_reference() = default;
-
-	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
-	operator=(const element_type&);
-
-	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
-	operator=(element_type&& value) {
-		element_at(0, 0) = std::move(value);
-		return *this;
-	}
+	~smatrix_region_reference_base() = default;
 
 	element_type& element_at(unsigned row, unsigned col) {
 		return smatrix.element_at(first_row + row, first_col + col);
@@ -108,23 +38,83 @@ public:
 		return smatrix.element_at(first_row + row, first_col + col);
 	}
 
+protected:
+	SMatrix& smatrix;
+	const unsigned first_row;
+	const unsigned first_col;
+};
+
+
+template <typename SMatrix, unsigned Rows, unsigned Cols>
+class smatrix_area_reference;
+
+
+template <typename SMatrix, unsigned Rows, unsigned Cols>
+class smatrix_rows_reference : public smatrix_region_reference_base<SMatrix, Rows, Cols> {
+private:
+	template <unsigned ARows, unsigned ACols>
+	using area_reference = smatrix_area_reference<SMatrix, ARows, ACols>;
+
+	template <unsigned ARows, unsigned ACols>
+	using const_area_reference = const smatrix_area_reference<const SMatrix, ARows, ACols>;
+
+	using base = smatrix_region_reference_base<SMatrix, Rows, Cols>;
+	using base::base;  // Inherit constructors
+
+public:
+	using typename base::element_type;
+
+	area_reference<Rows, 1> operator[](unsigned col) {
+		return { this->smatrix, this->first_row, this->first_col + col };
+	}
+
+	//const_area_reference<Rows, 1> operator[](unsigned col) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_area_reference<const SMatrix, Rows, 1> operator[](unsigned col) const;
+};
+
+
+template <typename SMatrix, unsigned Rows, unsigned Cols>
+class smatrix_area_reference
+	: public static_matrix<smatrix_area_reference<SMatrix, Rows, Cols>>,
+	  public smatrix_region_reference_base<SMatrix, Rows, Cols>
+{
+private:
+	template <unsigned RRows, unsigned RCols>
+	using rows_reference = smatrix_rows_reference<SMatrix, RRows, RCols>;
+
+	template <unsigned RRows, unsigned RCols>
+	using const_rows_reference = const smatrix_rows_reference<const SMatrix, RRows, RCols>;
+
+	using base = smatrix_region_reference_base<SMatrix, Rows, Cols>;
+	using base::base;  // Inherit constructors
+
+public:
+	using typename base::element_type;
+
+	static constexpr unsigned rows() noexcept { return Rows; }
+	static constexpr unsigned cols() noexcept { return Cols; }
+
+	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
+	operator=(const element_type&);
+
+	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
+	operator=(element_type&& value) {
+		this->element_at(0, 0) = std::move(value);
+		return *this;
+	}
+
 	rows_reference<1, Cols> operator[](unsigned row) {
-		return { smatrix, first_row + row, first_col };
+		return { this->smatrix, this->first_row + row, this->first_col };
 	}
 
 	//const_rows_reference<1, Cols> operator[](unsigned row) const; //  <-- This line makes GCC 4.8.4 crash!
 	const smatrix_rows_reference<const SMatrix, 1, Cols> operator[](unsigned row) const;
 
 	operator typename std::enable_if<Rows==1 && Cols==1, element_type>::type&() {
-		return element_at(0, 0);
+		return this->element_at(0, 0);
 	}
 
 	operator const typename std::enable_if<Rows==1 && Cols==1, element_type>::type&() const;
-
-private:
-	SMatrix& smatrix;
-	const unsigned first_row;
-	const unsigned first_col;
 };
 
 

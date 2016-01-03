@@ -88,8 +88,8 @@ template <typename M>
 class dynamic_matrix : public matrix<M> {};
 
 
-template <typename DMatrix>
-class dmatrix_region_reference_base {
+template <typename DMatrix, typename M>
+class dmatrix_region_reference_base : public dynamic_matrix<M> {
 public:
 	using element_type = typename DMatrix::element_type;
 
@@ -111,6 +111,31 @@ public:
 
 	~dmatrix_region_reference_base() = default;
 
+	template <typename OtherM>
+	dmatrix_region_reference_base& operator=(const dynamic_matrix<OtherM>&);
+
+	template <typename OtherM>
+	typename std::enable_if<
+			std::is_same<
+					typename OtherM::element_type,
+					element_type
+				>::value,
+			dmatrix_region_reference_base
+		>::type&
+	operator=(dynamic_matrix<OtherM>&& m) {
+		incompatible_operands::throw_if_not_same_shape(*this, "=", m);
+		move_to(*this, std::move(m));
+		return *this;
+	}
+
+	dmatrix_region_reference_base& operator=(const element_type&);
+
+	dmatrix_region_reference_base& operator=(element_type&& value) {
+		incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(*this, "=");
+		this->element_at(0, 0) = std::move(value);
+		return *this;
+	}
+
 	unsigned rows() const noexcept { return _rows; };
 
 	unsigned cols() const noexcept { return _cols; };
@@ -122,6 +147,13 @@ public:
 	const element_type& element_at(unsigned row, unsigned col) const {
 		return dmatrix.element_at(first_row + row, first_col + col);
 	}
+
+	operator element_type&() {
+		incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("=", *this);
+		return this->element_at(0, 0);
+	}
+
+	operator const element_type&() const;
 
 protected:
 	DMatrix& dmatrix;
@@ -137,15 +169,37 @@ class dmatrix_area_reference;
 
 
 template <typename DMatrix>
-class dmatrix_rows_reference : public dmatrix_region_reference_base<DMatrix> {
+class dmatrix_rows_reference
+	: public dmatrix_region_reference_base<DMatrix,
+	                dmatrix_rows_reference<DMatrix>>
+{
 private:
 	using area_reference = dmatrix_area_reference<DMatrix>;
 	using const_area_reference = const dmatrix_area_reference<const DMatrix>;
 
-	using base = dmatrix_region_reference_base<DMatrix>;
+	using base = dmatrix_region_reference_base<DMatrix,
+	                    dmatrix_rows_reference<DMatrix>>;
 	using base::base;  // Inherit constructors
 
 public:
+	using typename base::element_type;
+
+	template <typename M>
+	dmatrix_rows_reference& operator=(const dynamic_matrix<M>&);
+
+	template <typename M>
+	dmatrix_rows_reference& operator=(dynamic_matrix<M>&& m) {
+		base::operator=(std::move(m));
+		return *this;
+	}
+
+	dmatrix_rows_reference& operator=(const element_type&);
+
+	dmatrix_rows_reference& operator=(element_type&& value) {
+		base::operator=(std::move(value));
+		return *this;
+	}
+
 	area_reference operator[](unsigned col) {
 		return {
 			this->dmatrix,
@@ -180,41 +234,33 @@ public:
 
 template <typename DMatrix>
 class dmatrix_area_reference
-	: public dynamic_matrix<dmatrix_area_reference<DMatrix>>,
-	  public dmatrix_region_reference_base<DMatrix>
+	: public dmatrix_region_reference_base<DMatrix,
+	                dmatrix_area_reference<DMatrix>>
 {
 private:
 	using rows_reference = dmatrix_rows_reference<DMatrix>;
 	using const_rows_reference = const dmatrix_rows_reference<const DMatrix>;
 
-	using base = dmatrix_region_reference_base<DMatrix>;
+	using base = dmatrix_region_reference_base<DMatrix,
+	                    dmatrix_area_reference<DMatrix>>;
 	using base::base;  // Inherit constructors
 
 public:
 	using typename base::element_type;
 
-	dmatrix_area_reference& operator=(const element_type&);
-
-	dmatrix_area_reference& operator=(element_type&& value) {
-		incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(*this, "=");
-		this->element_at(0, 0) = std::move(value);
-		return *this;
-	}
-
 	template <typename M>
 	dmatrix_area_reference& operator=(const dynamic_matrix<M>&);
 
 	template <typename M>
-	typename std::enable_if<
-			std::is_same<
-					typename M::element_type,
-					element_type
-				>::value,
-			dmatrix_area_reference
-		>::type&
-	operator=(dynamic_matrix<M>&& m) {
-		incompatible_operands::throw_if_not_same_shape(*this, "=", m);
-		move_to(*this, std::move(m));
+	dmatrix_area_reference& operator=(dynamic_matrix<M>&& m) {
+		base::operator=(std::move(m));
+		return *this;
+	}
+
+	dmatrix_area_reference& operator=(const element_type&);
+
+	dmatrix_area_reference& operator=(element_type&& value) {
+		base::operator=(std::move(value));
 		return *this;
 	}
 
@@ -227,13 +273,6 @@ public:
 	}
 
 	const rows_reference operator[](unsigned row) const;
-
-	operator element_type&() {
-		incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("=", *this);
-		return this->element_at(0, 0);
-	}
-
-	operator const element_type&() const;
 };
 
 

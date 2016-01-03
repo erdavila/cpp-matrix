@@ -13,10 +13,14 @@ template <typename M>
 class static_matrix : public matrix<M> {};
 
 
-template <typename SMatrix, unsigned Rows, unsigned Cols>
-class smatrix_region_reference_base {
+template <typename SMatrix, unsigned Rows, unsigned Cols, typename M>
+class smatrix_region_reference_base : public static_matrix<M> {
 public:
 	using element_type = typename SMatrix::element_type;
+
+	static constexpr unsigned rows() noexcept { return Rows; }
+
+	static constexpr unsigned cols() noexcept { return Cols; }
 
 	smatrix_region_reference_base() = delete;
 
@@ -30,6 +34,34 @@ public:
 
 	~smatrix_region_reference_base() = default;
 
+	template <typename OtherM>
+	smatrix_region_reference_base& operator=(const static_matrix<OtherM>& m);
+
+	template <typename OtherM>
+	typename std::enable_if<
+			std::is_same<
+					typename OtherM::element_type,
+					element_type
+				>::value,
+			smatrix_region_reference_base
+		>::type&
+	operator=(static_matrix<OtherM>&& m) {
+		static_assert_static_matrix_same_shape(*this, m);
+		move_to(*this, std::move(m));
+		return *this;
+	}
+
+	smatrix_region_reference_base& operator=(const element_type&) /* {
+		static_assert_static_matrix_1x1(*this);
+		...
+	}*/;
+
+	smatrix_region_reference_base& operator=(element_type&& value) {
+		static_assert_static_matrix_1x1(*this);
+		this->element_at(0, 0) = std::move(value);
+		return *this;
+	}
+
 	element_type& element_at(unsigned row, unsigned col) {
 		return smatrix.element_at(first_row + row, first_col + col);
 	}
@@ -37,6 +69,16 @@ public:
 	const element_type& element_at(unsigned row, unsigned col) const {
 		return smatrix.element_at(first_row + row, first_col + col);
 	}
+
+	operator element_type&() {
+		static_assert_static_matrix_1x1(*this);
+		return this->element_at(0, 0);
+	}
+
+	operator const element_type&() const /*{
+		static_assert_static_matrix_1x1(*this);
+		...
+	}*/;
 
 protected:
 	SMatrix& smatrix;
@@ -50,7 +92,10 @@ class smatrix_area_reference;
 
 
 template <typename SMatrix, unsigned Rows, unsigned Cols>
-class smatrix_rows_reference : public smatrix_region_reference_base<SMatrix, Rows, Cols> {
+class smatrix_rows_reference
+	: public smatrix_region_reference_base<SMatrix, Rows, Cols,
+	                smatrix_rows_reference<SMatrix, Rows, Cols>>
+{
 private:
 	template <unsigned ARows, unsigned ACols>
 	using area_reference = smatrix_area_reference<SMatrix, ARows, ACols>;
@@ -58,11 +103,28 @@ private:
 	template <unsigned ARows, unsigned ACols>
 	using const_area_reference = const smatrix_area_reference<const SMatrix, ARows, ACols>;
 
-	using base = smatrix_region_reference_base<SMatrix, Rows, Cols>;
+	using base = smatrix_region_reference_base<SMatrix, Rows, Cols,
+	                    smatrix_rows_reference<SMatrix, Rows, Cols>>;
 	using base::base;  // Inherit constructors
 
 public:
 	using typename base::element_type;
+
+	template <typename M>
+	smatrix_rows_reference& operator=(const static_matrix<M>&);
+
+	template <typename M>
+	smatrix_rows_reference& operator=(static_matrix<M>&& m) {
+		base::operator=(std::move(m));
+		return *this;
+	}
+
+	smatrix_rows_reference& operator=(const element_type&);
+
+	smatrix_rows_reference& operator=(element_type&& value) {
+		base::operator=(std::move(value));
+		return *this;
+	}
 
 	area_reference<Rows, 1> operator[](unsigned col) {
 		return { this->smatrix, this->first_row, this->first_col + col };
@@ -91,8 +153,8 @@ public:
 
 template <typename SMatrix, unsigned Rows, unsigned Cols>
 class smatrix_area_reference
-	: public static_matrix<smatrix_area_reference<SMatrix, Rows, Cols>>,
-	  public smatrix_region_reference_base<SMatrix, Rows, Cols>
+	: public smatrix_region_reference_base<SMatrix, Rows, Cols,
+	                smatrix_area_reference<SMatrix, Rows, Cols>>
 {
 private:
 	template <unsigned RRows, unsigned RCols>
@@ -101,41 +163,26 @@ private:
 	template <unsigned RRows, unsigned RCols>
 	using const_rows_reference = const smatrix_rows_reference<const SMatrix, RRows, RCols>;
 
-	using base = smatrix_region_reference_base<SMatrix, Rows, Cols>;
+	using base = smatrix_region_reference_base<SMatrix, Rows, Cols,
+	                    smatrix_area_reference<SMatrix, Rows, Cols>>;
 	using base::base;  // Inherit constructors
 
 public:
 	using typename base::element_type;
 
-	static constexpr unsigned rows() noexcept { return Rows; }
-
-	static constexpr unsigned cols() noexcept { return Cols; }
-
 	template <typename M>
 	smatrix_area_reference& operator=(const static_matrix<M>& m);
 
 	template <typename M>
-	typename std::enable_if<
-			std::is_same<
-					typename M::element_type,
-					element_type
-				>::value,
-			smatrix_area_reference
-		>::type&
-	operator=(static_matrix<M>&& m) {
-		static_assert(M::rows() == Rows  &&  M::cols() == Cols, "The static_matrix shape is not compatible");
-		move_to(*this, std::move(m));
+	smatrix_area_reference& operator=(static_matrix<M>&& m) {
+		base::operator=(std::move(m));
 		return *this;
 	}
 
-	smatrix_area_reference& operator=(const element_type&) /* {
-		static_assert_static_matrix_1x1(*this);
-		...
-	}*/;
+	smatrix_area_reference& operator=(const element_type&);
 
 	smatrix_area_reference& operator=(element_type&& value) {
-		static_assert_static_matrix_1x1(*this);
-		this->element_at(0, 0) = std::move(value);
+		base::operator=(std::move(value));
 		return *this;
 	}
 
@@ -145,16 +192,6 @@ public:
 
 	//const_rows_reference<1, Cols> operator[](unsigned row) const; //  <-- This line makes GCC 4.8.4 crash!
 	const smatrix_rows_reference<const SMatrix, 1, Cols> operator[](unsigned row) const;
-
-	operator element_type&() {
-		static_assert_static_matrix_1x1(*this);
-		return this->element_at(0, 0);
-	}
-
-	operator const element_type&() const /*{
-		static_assert_static_matrix_1x1(*this);
-		...
-	}*/;
 };
 
 
@@ -244,6 +281,11 @@ private:
 template <typename ML, typename MR>
 inline void static_assert_static_matrix_same_shape() {
 	static_assert(ML::rows() == MR::rows()  &&  ML::cols() == MR::cols(), "Both static_matrix'es must have the same shape for this operation");
+}
+
+template <typename ML, typename MR>
+inline void static_assert_static_matrix_same_shape(const static_matrix<ML>& lhs, const static_matrix<MR>& rhs) {
+	static_assert_static_matrix_same_shape<ML, MR>();
 }
 
 template <typename M>

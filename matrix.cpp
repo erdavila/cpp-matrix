@@ -10,7 +10,7 @@
 #define assert_throws(EXPR, EXCEPTION) \
 	try { \
 		EXPR; \
-		assert(false); \
+		assert(!"Exception not thrown"); \
 	} catch(EXCEPTION&) { \
 		assert(true); \
 	}
@@ -192,6 +192,29 @@ namespace safely_constructed_array {
 } /* namespace safely_constructed_array */
 
 
+namespace base {
+	template <typename T, typename F, typename Expected>
+	struct test_with_qualifiers_of {
+		using Result = typename matrix::__impl::with_qualifiers_of<F, T>::type;
+		static constexpr bool value = std::is_same<Result, Expected>::value;
+	};
+
+	void testWithQualifiersOf() {
+		assert((test_with_qualifiers_of<const char& ,       int  ,       char  >::value));
+		assert((test_with_qualifiers_of<const char&&,       int  ,       char  >::value));
+		assert((test_with_qualifiers_of<      char  , const int  , const char  >::value));
+		assert((test_with_qualifiers_of<      char  ,       int& ,       char& >::value));
+		assert((test_with_qualifiers_of<      char  , const int& , const char& >::value));
+		assert((test_with_qualifiers_of<      char  ,       int&&,       char&&>::value));
+		assert((test_with_qualifiers_of<      char  , const int&&, const char&&>::value));
+	}
+
+	void test() {
+		testWithQualifiersOf();
+	}
+} /* namespace base */
+
+
 namespace smatrix {
 	void testBasics() {
 		using Matrix = matrix::smatrix<int, 2, 3>;
@@ -323,6 +346,35 @@ namespace smatrix {
 		assert(m[1][0] ==  7);
 		assert(m[1][1] ==  9);
 		assert(m[1][2] == -1);
+
+		//assert_not_compilable(m[1][0] = (matrix::smatrix<int, 1, 2>({ { 3, 4 } })));
+	}
+
+	void testSingleRowAllColumnsAccess() {
+		matrix::smatrix<int, 3, 3> m({ { 1, 2, 3 },
+		                               { 4, 5, 6 },
+		                               { 7, 8, 9 } });
+
+		assert(m[2][matrix::all].rows() == 1);
+		assert(m[2][matrix::all].cols() == 3);
+		assert(m[2][matrix::all] == (matrix::smatrix<int, 1, 3>({ { 7, 8, 9 } })));
+		assert(m[2][matrix::all].element_at(0, 1) == 8);
+		assert((m[2][matrix::all])[0][1] == 8);
+		int& n = m[2][matrix::all].element_at(0, 1);
+		assert(n == 8);
+
+		m[0][matrix::all] = matrix::smatrix<int, 1, 3>({ { 3, 4, 7 } });
+		m[1][matrix::all].element_at(0, 0) = -1;
+		m[1][matrix::all][0][2]	= 10;
+		n = 100;
+
+		assert(m == (matrix::smatrix<int, 3, 3>({ {  3,   4,  7 },
+		                                          { -1,   5, 10 },
+		                                          {  7, 100,  9 } })));
+
+		//assert_not_compilable(m[2][matrix::all] = 0);
+		//assert_not_compilable(int r = m[2][matrix::all]);
+		//assert_not_compilable(m[2][matrix::all] = (matrix::smatrix<int, 1, 2>({ { 3, 4 } })));
 	}
 
 	void test() {
@@ -332,6 +384,7 @@ namespace smatrix {
 		testMatrixMatrixComparison();
 		testMatrixScalarComparison();
 		testSingleRowSingleColumnAccess();
+		testSingleRowAllColumnsAccess();
 	}
 } /* namespace smatrix */
 
@@ -456,7 +509,6 @@ namespace dmatrix {
 		assert(!(mA > 9));   assert(  mA <= 9 );
 	}
 
-
 	void testSingleRowSingleColumnAccess() {
 		matrix::dmatrix<int> m({ { 1, 2, 3 },
 		                         { 4, 5, 6 } });
@@ -486,6 +538,35 @@ namespace dmatrix {
 		assert(m[1][0] ==  7);
 		assert(m[1][1] ==  9);
 		assert(m[1][2] == -1);
+
+		assert_throws(m[1][0] = (matrix::dmatrix<int>({ { 3, 4 } })), matrix::incompatible_operands);
+	}
+
+	void testSingleRowAllColumnsAccess() {
+		matrix::dmatrix<int> m({ { 1, 2, 3 },
+		                         { 4, 5, 6 },
+		                         { 7, 8, 9 } });
+
+		assert(m[2][matrix::all].rows() == 1);
+		assert(m[2][matrix::all].cols() == 3);
+		assert(m[2][matrix::all] == (matrix::dmatrix<int>({ { 7, 8, 9 } })));
+		assert(m[2][matrix::all].element_at(0, 1) == 8);
+		assert((m[2][matrix::all])[0][1] == 8);
+		int& n = m[2][matrix::all].element_at(0, 1);
+		assert(n == 8);
+
+		m[0][matrix::all] = matrix::dmatrix<int>({ { 3, 4, 7 } });
+		m[1][matrix::all].element_at(0, 0) = -1;
+		m[1][matrix::all][0][2]	= 10;
+		n = 100;
+
+		assert(m == (matrix::smatrix<int, 3, 3>({ {  3,   4,  7 },
+		                                          { -1,   5, 10 },
+		                                          {  7, 100,  9 } })));
+
+		assert_throws(m[2][matrix::all] = 0, matrix::incompatible_operands);
+		assert_throws(int r = m[2][matrix::all]; (void)r, matrix::incompatible_operands);
+		assert_throws(m[2][matrix::all] = (matrix::dmatrix<int>({ { 3, 4 } })), matrix::incompatible_operands);
 	}
 
 	void test() {
@@ -497,6 +578,7 @@ namespace dmatrix {
 		testMatrixMatrixComparison();
 		testMatrixScalarComparison();
 		testSingleRowSingleColumnAccess();
+		testSingleRowAllColumnsAccess();
 	}
 } /* namespace dmatrix */
 
@@ -584,6 +666,7 @@ namespace common {
 int main() {
 	storage::test();
 	safely_constructed_array::test();
+	base::test();
 	smatrix::test();
 	dmatrix::test();
 	common::test();

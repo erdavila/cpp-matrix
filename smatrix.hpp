@@ -70,6 +70,13 @@ public:
 
 	//const_area_reference<Rows, 1> operator[](unsigned col) const; //  <-- This line makes GCC 4.8.4 crash!
 	const smatrix_area_reference<const SMatrix, Rows, 1> operator[](unsigned col) const;
+
+	area_reference<Rows, Cols> operator[](all_t) {
+		return { this->smatrix, this->first_row, this->first_col };
+	}
+
+	//const_area_reference<Rows, Cols> operator[](all_t) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_area_reference<const SMatrix, Rows, Cols> operator[](all_t) const;
 };
 
 
@@ -92,13 +99,33 @@ public:
 	using typename base::element_type;
 
 	static constexpr unsigned rows() noexcept { return Rows; }
+
 	static constexpr unsigned cols() noexcept { return Cols; }
 
-	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
-	operator=(const element_type&);
+	template <typename M>
+	smatrix_area_reference& operator=(const static_matrix<M>& m);
 
-	typename std::enable_if<Rows==1 && Cols==1, smatrix_area_reference>::type&
-	operator=(element_type&& value) {
+	template <typename M>
+	typename std::enable_if<
+			std::is_same<
+					typename M::element_type,
+					element_type
+				>::value,
+			smatrix_area_reference
+		>::type&
+	operator=(static_matrix<M>&& m) {
+		static_assert(M::rows() == Rows  &&  M::cols() == Cols, "The static_matrix shape is not compatible");
+		move_to(*this, std::move(m));
+		return *this;
+	}
+
+	smatrix_area_reference& operator=(const element_type&) /* {
+		static_assert_static_matrix_1x1(*this);
+		...
+	}*/;
+
+	smatrix_area_reference& operator=(element_type&& value) {
+		static_assert_static_matrix_1x1(*this);
 		this->element_at(0, 0) = std::move(value);
 		return *this;
 	}
@@ -110,11 +137,15 @@ public:
 	//const_rows_reference<1, Cols> operator[](unsigned row) const; //  <-- This line makes GCC 4.8.4 crash!
 	const smatrix_rows_reference<const SMatrix, 1, Cols> operator[](unsigned row) const;
 
-	operator typename std::enable_if<Rows==1 && Cols==1, element_type>::type&() {
+	operator element_type&() {
+		static_assert_static_matrix_1x1(*this);
 		return this->element_at(0, 0);
 	}
 
-	operator const typename std::enable_if<Rows==1 && Cols==1, element_type>::type&() const;
+	operator const element_type&() const /*{
+		static_assert_static_matrix_1x1(*this);
+		...
+	}*/;
 };
 
 
@@ -201,14 +232,14 @@ private:
 };
 
 
-template <unsigned RowsL, unsigned ColsL, unsigned RowsR, unsigned ColsR>
-inline void static_assert_smatrix_same_shape() {
-	static_assert(RowsL == RowsR  &&  ColsL == ColsR, "Both smatrices must have the same shape for this operation");
+template <typename ML, typename MR>
+inline void static_assert_static_matrix_same_shape() {
+	static_assert(ML::rows() == MR::rows()  &&  ML::cols() == MR::cols(), "Both static_matrix'es must have the same shape for this operation");
 }
 
 template <typename M>
 inline void static_assert_static_matrix_1x1() {
-	static_assert(M::rows() == 1  &&  M::cols() == 1, "The smatrix must be 1x1 for this operation");
+	static_assert(M::rows() == 1  &&  M::cols() == 1, "The static_matrix must be 1x1 for this operation");
 }
 
 // TODO: remove this function when all operators below use static_matrix arguments instead of smatrix
@@ -218,10 +249,10 @@ inline void static_assert_static_matrix_1x1(const static_matrix<M>&) {
 }
 
 
-template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
+template <typename ML, typename MR>
 inline
-bool operator==(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
-	static_assert_smatrix_same_shape<RowsL, ColsL, RowsR, ColsR>();
+bool operator==(const static_matrix<ML>& lhs, const static_matrix<MR>& rhs) {
+	static_assert_static_matrix_same_shape<ML, MR>();
 	return equal_to(lhs, rhs);
 }
 
@@ -232,9 +263,9 @@ bool operator==(const static_matrix<M>& lhs, const typename M::element_type& rhs
 	return element_at(lhs, 0, 0) == rhs;
 }
 
-template <typename T, unsigned Rows, unsigned Cols>
+template <typename M>
 inline
-bool operator==(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
+bool operator==(const typename M::element_type& lhs, const static_matrix<M>& rhs) {
 	return rhs == lhs;
 }
 

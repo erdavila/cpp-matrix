@@ -13,6 +13,77 @@
 namespace matrix {
 
 
+template <typename M> class dynamic_matrix;
+template <typename M> class dmatrix;
+
+
+class incompatible_operands : public std::invalid_argument {
+public:
+	template <typename ML, typename MR>
+	static void throw_if_not_same_shape(const matrix<ML>& lhs, const std::string& operation, const matrix<MR>& rhs) {
+		if(rows(lhs) != rows(rhs)  ||  cols(lhs) != cols(rhs)) {
+			throw incompatible_operands(lhs, operation, rhs);
+		}
+	}
+
+	template <typename ML>
+	static void throw_if_not_scalar_dynamic_matrix_at_left(const dynamic_matrix<ML>& lhs, const std::string& operation) {
+		if(!is_scalar_dynamic_matrix(lhs)) {
+			throw incompatible_operands(lhs, operation, "scalar");
+		}
+	}
+
+	template <typename MR>
+	static void throw_if_not_scalar_dynamic_matrix_at_right(const std::string& operation, const dynamic_matrix<MR>& rhs) {
+		if(!is_scalar_dynamic_matrix(rhs)) {
+			throw incompatible_operands("scalar", operation, rhs);
+		}
+	}
+
+	template <typename TL, typename TR>
+	static void throw_if_not_scalar_dmatrices(const dmatrix<TL>& lhs, const std::string& operation, const dmatrix<TR>& rhs) {
+		if(!is_scalar_dynamic_matrix(lhs)  ||  !is_scalar_dynamic_matrix(rhs)) {
+			throw incompatible_operands(lhs, operation, rhs);
+		}
+	}
+
+	template <typename TL, typename TR>
+	incompatible_operands(const TL& lhs, const std::string& operation, const TR& rhs)
+		: invalid_argument(type_string(lhs) + ' ' + operation + ' ' + type_string(rhs))
+	{}
+
+private:
+	template <typename M>
+	static bool is_scalar_dynamic_matrix(const dynamic_matrix<M>& m) noexcept {
+		return (rows(m) == 1  &&  cols(m) == 1);
+	}
+
+	template <typename M>
+	static std::string dimensions(const matrix<M>& m) {
+		return '[' + std::to_string(rows(m)) + 'x' + std::to_string(cols(m)) + ']';
+	}
+
+	template <typename M>
+	static std::string type_string(const matrix<M>& m) {
+		return type_string(concrete_matrix(m));
+	}
+
+	template <typename M>
+	static std::string type_string(const dynamic_matrix<M>& m) {
+		return "dynamic_matrix" + dimensions(m);
+	}
+
+	template <typename T, unsigned Rows, unsigned Cols>
+	static std::string type_string(const smatrix<T, Rows, Cols>& m) {
+		return "smatrix" + dimensions(m);
+	}
+
+	static std::string type_string(const std::string& s) {
+		return s;
+	}
+};
+
+
 template <typename M>
 class dynamic_matrix : public matrix<M> {};
 
@@ -84,6 +155,16 @@ public:
 	}
 
 	const_area_reference operator[](unsigned col) const;
+
+	area_reference operator[](all_t) {
+		return {
+			this->dmatrix,
+			this->_rows, this->_cols,
+			this->first_row, this->first_col
+		};
+	}
+
+	const_area_reference operator[](all_t) const;
 };
 
 
@@ -105,7 +186,25 @@ public:
 	dmatrix_area_reference& operator=(const element_type&);
 
 	dmatrix_area_reference& operator=(element_type&& value) {
+		incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(*this, "=");
 		this->element_at(0, 0) = std::move(value);
+		return *this;
+	}
+
+	template <typename M>
+	dmatrix_area_reference& operator=(const dynamic_matrix<M>&);
+
+	template <typename M>
+	typename std::enable_if<
+			std::is_same<
+					typename M::element_type,
+					element_type
+				>::value,
+			dmatrix_area_reference
+		>::type&
+	operator=(dynamic_matrix<M>&& m) {
+		incompatible_operands::throw_if_not_same_shape(*this, "=", m);
+		move_to(*this, std::move(m));
 		return *this;
 	}
 
@@ -120,6 +219,7 @@ public:
 	const rows_reference operator[](unsigned row) const;
 
 	operator element_type&() {
+		incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("=", *this);
 		return this->element_at(0, 0);
 	}
 
@@ -230,76 +330,9 @@ private:
 };
 
 
-class incompatible_operands : public std::invalid_argument {
-public:
-	template <typename ML, typename MR>
-	static void throw_if_not_same_shape(const matrix<ML>& lhs, const std::string& operation, const matrix<MR>& rhs) {
-		if(rows(lhs) != rows(rhs)  ||  cols(lhs) != cols(rhs)) {
-			throw incompatible_operands(lhs, operation, rhs);
-		}
-	}
-
-	template <typename ML>
-	static void throw_if_not_scalar_dynamic_matrix_at_left(const dynamic_matrix<ML>& lhs, const std::string& operation) {
-		if(!is_scalar_dynamic_matrix(lhs)) {
-			throw incompatible_operands(lhs, operation, "scalar");
-		}
-	}
-
-	template <typename MR>
-	static void throw_if_not_scalar_dynamic_matrix_at_right(const std::string& operation, const dynamic_matrix<MR>& rhs) {
-		if(!is_scalar_dynamic_matrix(rhs)) {
-			throw incompatible_operands("scalar", operation, rhs);
-		}
-	}
-
-	template <typename TL, typename TR>
-	static void throw_if_not_scalar_dmatrices(const dmatrix<TL>& lhs, const std::string& operation, const dmatrix<TR>& rhs) {
-		if(!is_scalar_dynamic_matrix(lhs)  ||  !is_scalar_dynamic_matrix(rhs)) {
-			throw incompatible_operands(lhs, operation, rhs);
-		}
-	}
-
-	template <typename TL, typename TR>
-	incompatible_operands(const TL& lhs, const std::string& operation, const TR& rhs)
-		: invalid_argument(type_string(lhs) + ' ' + operation + ' ' + type_string(rhs))
-	{}
-
-private:
-	template <typename M>
-	static bool is_scalar_dynamic_matrix(const dynamic_matrix<M>& m) noexcept {
-		return (rows(m) == 1  &&  cols(m) == 1);
-	}
-
-	template <typename M>
-	static std::string dimensions(const matrix<M>& m) {
-		return '[' + std::to_string(rows(m)) + 'x' + std::to_string(cols(m)) + ']';
-	}
-
-	template <typename M>
-	static std::string type_string(const matrix<M>& m) {
-		return type_string(concrete_matrix(m));
-	}
-
-	template <typename M>
-	static std::string type_string(const dynamic_matrix<M>& m) {
-		return "dynamic_matrix" + dimensions(m);
-	}
-
-	template <typename T, unsigned Rows, unsigned Cols>
-	static std::string type_string(const smatrix<T, Rows, Cols>& m) {
-		return "smatrix" + dimensions(m);
-	}
-
-	static std::string type_string(const std::string& s) {
-		return s;
-	}
-};
-
-
-template <typename TL, typename TR>
+template <typename ML, typename MR>
 inline
-bool operator==(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
+bool operator==(const dynamic_matrix<ML>& lhs, const dynamic_matrix<MR>& rhs) {
 	incompatible_operands::throw_if_not_same_shape(lhs, "==", rhs);
 	return equal_to(lhs, rhs);
 }

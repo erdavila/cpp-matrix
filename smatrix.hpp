@@ -71,6 +71,15 @@ public:
 	//const_area_reference<Rows, 1> operator[](unsigned col) const; //  <-- This line makes GCC 4.8.4 crash!
 	const smatrix_area_reference<const SMatrix, Rows, 1> operator[](unsigned col) const;
 
+	template <unsigned RangeCols>
+	area_reference<Rows, RangeCols> operator[](srange<RangeCols> col_range) {
+		return { this->smatrix, this->first_row, this->first_col + col_range.first };
+	}
+
+	template <unsigned RangeCols>
+	//const_area_reference<Rows, RangeCols> operator[](range<RangeCols>) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_area_reference<const SMatrix, Rows, RangeCols> operator[](srange<RangeCols>) const;
+
 	area_reference<Rows, Cols> operator[](all_t) {
 		return { this->smatrix, this->first_row, this->first_col };
 	}

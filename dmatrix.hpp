@@ -156,6 +156,16 @@ public:
 
 	const_area_reference operator[](unsigned col) const;
 
+	area_reference operator[](drange col_range) {
+		return {
+			this->dmatrix,
+			this->_rows, col_range.size,
+			this->first_row, this->first_col + col_range.first
+		};
+	}
+
+	const_area_reference operator[](drange) const;
+
 	area_reference operator[](all_t) {
 		return {
 			this->dmatrix,

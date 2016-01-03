@@ -136,6 +136,19 @@ enum class all_t { all };
 constexpr const all_t& all = all_t::all;
 
 
+template <unsigned Size>
+struct srange {
+	unsigned first;
+	srange(unsigned first) : first(first) {}
+};
+
+struct drange {
+	unsigned size;
+	unsigned first;
+	drange(unsigned size, unsigned first) : size(size), first(first) {}
+};
+
+
 } /* namespace matrix */
 
 

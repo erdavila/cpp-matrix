@@ -239,17 +239,10 @@ private:
 class incompatible_operands : public std::invalid_argument {
 public:
 	template <typename ML, typename MR>
+	// TODO: use matrix<M> arguments
 	static void throw_if_not_same_shape(const ML& lhs, const std::string& operation, const MR& rhs) {
 		if(lhs.rows() != rhs.rows()  ||  lhs.cols() != rhs.cols()) {
 			throw incompatible_operands(lhs, operation, rhs);
-		}
-	}
-
-	template <typename TL>
-	[[deprecated]]
-	static void throw_if_not_scalar_dmatrix_at_left(const dmatrix<TL>& lhs, const std::string& operation) {
-		if(!is_scalar_dmatrix(lhs)) {
-			throw incompatible_operands(lhs, operation, "scalar");
 		}
 	}
 
@@ -260,16 +253,16 @@ public:
 		}
 	}
 
-	template <typename TR>
-	static void throw_if_not_scalar_dmatrix_at_right(const std::string& operation, const dmatrix<TR>& rhs) {
-		if(!is_scalar_dmatrix(rhs)) {
+	template <typename MR>
+	static void throw_if_not_scalar_dynamic_matrix_at_right(const std::string& operation, const dynamic_matrix<MR>& rhs) {
+		if(!is_scalar_dynamic_matrix(rhs)) {
 			throw incompatible_operands("scalar", operation, rhs);
 		}
 	}
 
 	template <typename TL, typename TR>
 	static void throw_if_not_scalar_dmatrices(const dmatrix<TL>& lhs, const std::string& operation, const dmatrix<TR>& rhs) {
-		if(!is_scalar_dmatrix(lhs)  ||  !is_scalar_dmatrix(rhs)) {
+		if(!is_scalar_dynamic_matrix(lhs)  ||  !is_scalar_dynamic_matrix(rhs)) {
 			throw incompatible_operands(lhs, operation, rhs);
 		}
 	}
@@ -283,12 +276,6 @@ private:
 	template <typename M>
 	static bool is_scalar_dynamic_matrix(const dynamic_matrix<M>& m) noexcept {
 		return (rows(m) == 1  &&  cols(m) == 1);
-	}
-
-	template <typename T>
-	[[deprecated]]
-	static bool is_scalar_dmatrix(const dmatrix<T>& m) noexcept {
-		return (m.rows() == 1  &&  m.cols() == 1);
 	}
 
 	template <typename M>
@@ -329,7 +316,7 @@ bool operator==(const dynamic_matrix<M>& lhs, const typename M::element_type& rh
 template <typename T>
 inline
 bool operator==(const T& lhs, const dmatrix<T>& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_right("==", rhs);
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("==", rhs);
 	return lhs == rhs.element_at(0, 0);
 }
 
@@ -344,14 +331,14 @@ bool operator!=(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
 template <typename T>
 inline
 bool operator!=(const dmatrix<T>& lhs, const T& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_left(lhs, "!=");
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(lhs, "!=");
 	return lhs.element_at(0, 0) != rhs;
 }
 
 template <typename T>
 inline
 bool operator!=(const T& lhs, const dmatrix<T>& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_right("!=", rhs);
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("!=", rhs);
 	return lhs != rhs.element_at(0, 0);
 }
 
@@ -366,14 +353,14 @@ bool operator<(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
 template <typename T>
 inline
 bool operator<(const dmatrix<T>& lhs, const T& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_left(lhs, "<");
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(lhs, "<");
 	return lhs.element_at(0, 0) < rhs;
 }
 
 template <typename T>
 inline
 bool operator<(const T& lhs, const dmatrix<T>& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_right("<", rhs);
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("<", rhs);
 	return lhs < rhs.element_at(0, 0);
 }
 
@@ -388,14 +375,14 @@ bool operator>(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
 template <typename T>
 inline
 bool operator>(const dmatrix<T>& lhs, const T& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_left(lhs, ">");
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(lhs, ">");
 	return lhs.element_at(0, 0) > rhs;
 }
 
 template <typename T>
 inline
 bool operator>(const T& lhs, const dmatrix<T>& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_right(">", rhs);
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right(">", rhs);
 	return lhs > rhs.element_at(0, 0);
 }
 
@@ -410,14 +397,14 @@ bool operator<=(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
 template <typename T>
 inline
 bool operator<=(const dmatrix<T>& lhs, const T& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_left(lhs, "<=");
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(lhs, "<=");
 	return lhs.element_at(0, 0) <= rhs;
 }
 
 template <typename T>
 inline
 bool operator<=(const T& lhs, const dmatrix<T>& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_right("<=", rhs);
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right("<=", rhs);
 	return lhs <= rhs.element_at(0, 0);
 }
 
@@ -432,14 +419,14 @@ bool operator>=(const dmatrix<TL>& lhs, const dmatrix<TR>& rhs) {
 template <typename T>
 inline
 bool operator>=(const dmatrix<T>& lhs, const T& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_left(lhs, ">=");
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_left(lhs, ">=");
 	return lhs.element_at(0, 0) >= rhs;
 }
 
 template <typename T>
 inline
 bool operator>=(const T& lhs, const dmatrix<T>& rhs) {
-	incompatible_operands::throw_if_not_scalar_dmatrix_at_right(">=", rhs);
+	incompatible_operands::throw_if_not_scalar_dynamic_matrix_at_right(">=", rhs);
 	return lhs >= rhs.element_at(0, 0);
 }
 

@@ -216,16 +216,15 @@ inline void static_assert_smatrix_same_shape() {
 	static_assert(RowsL == RowsR  &&  ColsL == ColsR, "Both smatrices must have the same shape for this operation");
 }
 
-// TODO: replace all uses of this with static_assert_static_matrix_1x1
-template <unsigned Rows, unsigned Cols>
-[[deprecated]]
-inline void static_assert_smatrix_1x1() {
-	static_assert(Rows == 1  &&  Cols == 1, "The smatrix must be 1x1 for this operation");
-}
-
 template <typename M>
 inline void static_assert_static_matrix_1x1() {
 	static_assert(M::rows() == 1  &&  M::cols() == 1, "The smatrix must be 1x1 for this operation");
+}
+
+// TODO: remove this function when all operators below use static_matrix arguments instead of smatrix
+template <typename M>
+inline void static_assert_static_matrix_1x1(const static_matrix<M>&) {
+	static_assert_static_matrix_1x1<M>();
 }
 
 
@@ -272,22 +271,22 @@ bool operator!=(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
 template <typename TL, unsigned RowsL, unsigned ColsL, typename TR, unsigned RowsR, unsigned ColsR>
 inline
 bool operator<(const smatrix<TL, RowsL, ColsL>& lhs, const smatrix<TR, RowsR, ColsR>& rhs) {
-	static_assert_smatrix_1x1<RowsL, ColsL>();
-	static_assert_smatrix_1x1<RowsR, ColsR>();
+	static_assert_static_matrix_1x1(lhs);
+	static_assert_static_matrix_1x1(rhs);
 	return lhs.element_at(0, 0) < rhs.element_at(0, 0);
 }
 
-template <typename T, unsigned Rows, unsigned Cols>
+template <typename T, unsigned RowsL, unsigned ColsL>
 inline
-bool operator<(const smatrix<T, Rows, Cols>& lhs, const T& rhs) {
-	static_assert_smatrix_1x1<Rows, Cols>();
+bool operator<(const smatrix<T, RowsL, ColsL>& lhs, const T& rhs) {
+	static_assert_static_matrix_1x1(lhs);
 	return lhs.element_at(0, 0) < rhs;
 }
 
 template <typename T, unsigned Rows, unsigned Cols>
 inline
 bool operator<(const T& lhs, const smatrix<T, Rows, Cols>& rhs) {
-	static_assert_smatrix_1x1<Rows, Cols>();
+	static_assert_static_matrix_1x1(rhs);
 	return lhs < rhs.element_at(0, 0);
 }
 

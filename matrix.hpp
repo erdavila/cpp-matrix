@@ -2,6 +2,7 @@
 #define MATRIX_HPP_
 
 
+#include "compat.hpp"
 #include "base.hpp"
 #include "smatrix.hpp"
 #include "dmatrix.hpp"

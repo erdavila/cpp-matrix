@@ -90,50 +90,59 @@ namespace storage {
 
 namespace safely_constructed_array {
 	struct Probe {
-		char id;
-		int *p;
+		char ch;
+		int count;
+		int *ptr;
+
+		std::string id() {
+			char chCount = '0' + count;
+			return std::string() + ch + chCount;
+		}
 
 		Probe();
 		Probe(const Probe&);
-		Probe(Probe&& p) : id(std::move(p.id)), p(p.p) {
-			if(throwing_id_on_move == p.id) {
-				log.push_back("throwing");
+		Probe(Probe&& p)
+			: ch(std::move(p.ch)),
+			  count(p.count + 1),
+			  ptr(p.ptr)
+		{
+			if(throwing_ch_on_move == p.ch) {
+				log.push_back("throwing on move");
 				throw std::runtime_error("throwing!");
 			}
-			id += 32; // to lower case
-			*this->p += 32;
-			p.p = nullptr;
-			log.push_back(id + std::string(": move-constructed"));
+			p.ptr = nullptr;
+			log.push_back(id() + ": move-constructed");
 		}
-		Probe(char id) : id(id), p(new int(id - 'A')) {
-			log.push_back(id + std::string(": char-constructed"));
+		Probe(int ch) : ch(ch), count(0), ptr(new int(ch - 'A')) {
+			log.push_back(id() + ": char-constructed");
 		}
 		~Probe() {
-			delete p;
-			log.push_back(id + std::string(": destructed"));
+			delete ptr;
+			log.push_back(id() + ": destructed");
 		}
 		Probe& operator=(const Probe&);
 		Probe& operator=(Probe&&);
-		Probe& operator=(char id) {
-			this->id = id;
-			*p = id - 'A';
-			log.push_back(id + std::string(": char-assigned"));
+		Probe& operator=(char ch) {
+			log.push_back(id() + "->" + ch + ": char-assigned");
+			this->ch = ch;
+			count = 0;
+			*ptr = ch - 'A';
 			return *this;
 		}
 		operator char&() {
-			return id;
+			return ch;
 		}
 		operator const char&() const;
 
-		static char throwing_id_on_move;
+		static char throwing_ch_on_move;
 		static std::vector<std::string> log;
 
 		static void reset() {
-			throwing_id_on_move = -1;
+			throwing_ch_on_move = -1;
 			log.clear();
 		}
 	};
-	char Probe::throwing_id_on_move;
+	char Probe::throwing_ch_on_move;
 	std::vector<std::string> Probe::log;
 
 	void testConstructWithProvider() {
@@ -142,24 +151,24 @@ namespace safely_constructed_array {
 		};
 		matrix::safely_constructed_array<Probe, 3> sca(provider);
 
-		assert(sca[0] == 'a');
-		assert(sca[1] == 'b');
-		assert(sca[2] == 'c');
+		assert(sca[0] == 'A');
+		assert(sca[1] == 'B');
+		assert(sca[2] == 'C');
 	}
 
 	void testConstructWithArrayAndChangeValue() {
 		matrix::safely_constructed_array<Probe, 3> sca({ 'A', 'B', 'C' });
 
-		sca[1] = 'X';
+		sca[1] = 'x';
 
-		assert(sca[0] == 'a');
-		assert(sca[1] == 'X');
-		assert(sca[2] == 'c');
+		assert(sca[0] == 'A');
+		assert(sca[1] == 'x');
+		assert(sca[2] == 'C');
 	}
 
 	void testConstructionThrowingOnMove() {
 		Probe::reset();
-		Probe::throwing_id_on_move = 'B';
+		Probe::throwing_ch_on_move = 'B';
 
 		try {
 			matrix::safely_constructed_array<Probe, 3> array(
@@ -173,13 +182,13 @@ namespace safely_constructed_array {
 		}
 
 		assert((Probe::log == std::vector<std::string>{
-			"A: char-constructed",
-			"a: move-constructed",
-			"A: destructed",
-			"B: char-constructed",
-			"throwing",
-			"B: destructed",
-			"a: destructed",
+			"A0: char-constructed",
+			"A1: move-constructed",
+			"A0: destructed",
+			"B0: char-constructed",
+			"throwing on move",
+			"B0: destructed",
+			"A1: destructed",
 			"exception caught"
 		}));
 	}

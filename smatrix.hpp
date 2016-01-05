@@ -232,7 +232,14 @@ public:
 	{}
 
 	template <typename U>
-	smatrix(const U(&)[Rows][Cols]);
+	smatrix(const U(& array)[Rows][Cols])
+		: elements(
+			[&](unsigned index) -> const U& {
+				indexes i = from_linear_index(index);
+				return array[i.row][i.col];
+			}
+		)
+	{}
 
 	~smatrix() = default;
 

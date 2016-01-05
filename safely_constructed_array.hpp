@@ -32,21 +32,27 @@ public:
 
 	safely_constructed_array(T(&& array)[Size])
 		: safely_constructed_array(
-			[&](unsigned index) -> T& {
-				return array[index];
+			[&](unsigned index) -> T&& {
+				return std::move(array[index]);
 			}
 		)
 	{}
 
 	template <typename U>
-	safely_constructed_array(const U(&)[Size]);
+	safely_constructed_array(const U(& array)[Size])
+		: safely_constructed_array(
+			[&](unsigned index) -> const U& {
+				return array[index];
+			}
+		)
+	{}
 
 	template <typename P>
 	safely_constructed_array(P provider) {
 		unsigned index;
 		try {
 			for(index = 0; index < Size; ++index) {
-				values[index].construct_value(std::move(provider(index)));
+				values[index].construct_value(provider(index));
 			}
 		} catch(...) {
 			destruct(index);

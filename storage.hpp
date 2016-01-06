@@ -47,14 +47,14 @@ class storage : private std::conditional<Verified, storage_verifier, null_storag
 public:
 	using value_type = T;
 
-	storage() = default;
+	storage() : dummy() {};
 
 	storage(const storage&);
 
 	storage(storage&&);
 
 	~storage() {
-		verify_constructed(false);
+		this->verify_constructed(false);
 	}
 
 	storage& operator=(const storage&) &;
@@ -63,44 +63,32 @@ public:
 
 	template <typename... Args>
 	void construct_value(Args&&... args) {
-		verify_constructed(false);
-		new(&store) T(std::forward<Args>(args)...);
-		set_constructed(true);
+		this->verify_constructed(false);
+		new(&value) T(std::forward<Args>(args)...);
+		this->set_constructed(true);
 	}
 
 	void destruct_value() {
-		verify_constructed(true);
-		value_reference().~T();
-		set_constructed(false);
+		this->verify_constructed(true);
+		value.~T();
+		this->set_constructed(false);
 	}
 
 	T& value_reference() {
-		return *value_pointer();
+		this->verify_constructed(true);
+		return value;
 	}
 
 	const T& value_reference() const {
-		return *value_pointer();
+		this->verify_constructed(true);
+		return value;
 	}
 
 private:
-	using verifier_type = typename std::conditional<Verified, storage_verifier, null_storage_verifier>::type;
-	using verifier_type::verify_constructed;
-	using verifier_type::set_constructed;
-
-	using store_type = typename std::aligned_storage<sizeof(T), alignof(T)>::type;
-	store_type store;
-
-	T* value_pointer() {
-		verify_constructed(true);
-		void* p = &store;
-		return static_cast<T*>(p);
-	}
-
-	const T* value_pointer() const {
-		verify_constructed(true);
-		const void* p = &store;
-		return static_cast<const T*>(p);
-	}
+	union {
+		T value;
+		char dummy;
+	};
 };
 
 

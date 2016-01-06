@@ -272,7 +272,7 @@ public:
 		};
 	}
 
-	const rows_reference operator[](unsigned row) const;
+	const_rows_reference operator[](unsigned row) const;
 };
 
 
@@ -359,6 +359,18 @@ public:
 	}
 
 	const_rows_reference operator[](unsigned row) const;
+
+	rows_reference operator[](drange row_range) {
+		return { *this, row_range.size, _cols, row_range.first, 0 };
+	}
+
+	const_rows_reference operator[](drange row_range) const;
+
+	rows_reference operator[](all_t) {
+		return { *this, _rows, _cols, 0, 0 };
+	}
+
+	const_rows_reference operator[](all_t) const;
 
 private:
 	unsigned _rows;

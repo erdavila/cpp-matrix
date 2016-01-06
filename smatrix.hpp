@@ -260,6 +260,22 @@ public:
 	//const_rows_reference<1, Cols> operator[](unsigned row) const; //  <-- This line makes GCC 4.8.4 crash!
 	const smatrix_rows_reference<const smatrix, 1, Cols> operator[](unsigned row) const;
 
+	template <unsigned RRows>
+	rows_reference<RRows, Cols> operator[](srange<RRows> row_range) {
+		return { *this, row_range.first, 0 };
+	}
+
+	template <unsigned RRows>
+	//const_rows_reference<RRows, Cols> operator[](srange<RRows> row_range) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_rows_reference<const smatrix, RRows, Cols> operator[](srange<RRows> row_range) const;
+
+	rows_reference<Rows, Cols> operator[](all_t) {
+		return { *this, 0, 0 };
+	}
+
+	//const_rows_reference<Rows, Cols> operator[](all_t) const; //  <-- This line makes GCC 4.8.4 crash!
+	const smatrix_rows_reference<const smatrix, Rows, Cols> operator[](all_t) const;
+
 private:
 	safely_constructed_array<T, Rows * Cols> elements;
 

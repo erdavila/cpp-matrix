@@ -17,6 +17,7 @@ template <typename SMatrix, unsigned Rows, unsigned Cols, typename M>
 class smatrix_region_reference_base : public static_matrix<M> {
 public:
 	using element_type = typename SMatrix::element_type;
+	using referred_matrix_type = typename std::remove_const<SMatrix>::type;
 
 	static constexpr unsigned rows() noexcept { return Rows; }
 

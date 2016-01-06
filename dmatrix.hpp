@@ -92,6 +92,7 @@ template <typename DMatrix, typename M>
 class dmatrix_region_reference_base : public dynamic_matrix<M> {
 public:
 	using element_type = typename DMatrix::element_type;
+	using referred_matrix_type = typename std::remove_const<DMatrix>::type;
 
 	dmatrix_region_reference_base() = delete;
 

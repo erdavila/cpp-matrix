@@ -444,12 +444,81 @@ namespace smatrix {
 		//assert_not_compilable(m[2] = (matrix::smatrix<int, 1, 2>({ { 3, 4 } })));
 	}
 
+	template <typename RowsRef>
+	bool checkColumnIndexSubscript(unsigned col_index, RowsRef rows_ref) {
+		using area_ref_type = decltype(
+			rows_ref[col_index]
+		);
+
+		return std::is_same<
+				area_ref_type,
+				matrix::smatrix_area_reference<
+						typename RowsRef::referred_matrix_type,
+						RowsRef::rows(), 1
+					>
+			>();
+	}
+
+	void testColumnIndexSubscript() {
+		matrix::smatrix<int, 3, 3> m({ { 1, 2, 3 },
+		                               { 4, 5, 6 },
+		                               { 7, 8, 9 } });
+
+		assert(checkColumnIndexSubscript(1, m[matrix::srange<2>(1)]));
+	}
+
+	template <unsigned Cols, typename RowsRef>
+	bool checkColumnsRangeSubscript(unsigned first_col, RowsRef rows_ref) {
+		using area_ref_type = decltype(
+			rows_ref[matrix::srange<Cols>(first_col)]
+		);
+
+		return std::is_same<
+				area_ref_type,
+				matrix::smatrix_area_reference<
+						typename RowsRef::referred_matrix_type,
+						RowsRef::rows(), Cols
+					>
+			>();
+	}
+
+	void testColumnsRangeSubscript() {
+		matrix::smatrix<int, 3, 3> m({ { 1, 2, 3 },
+		                               { 4, 5, 6 },
+		                               { 7, 8, 9 } });
+
+		assert(checkColumnsRangeSubscript<1>(1, m[matrix::srange<2>(0)]));
+		assert(checkColumnsRangeSubscript<2>(0, m[matrix::srange<2>(1)]));
+		assert(checkColumnsRangeSubscript<3>(0, m[matrix::srange<2>(0)]));
+	}
+
+	template <typename RowsRef>
+	bool checkAllColumnsSubscript(RowsRef rows_ref) {
+		using area_ref_type = decltype(
+			rows_ref[matrix::all]
+		);
+
+		return std::is_same<
+				area_ref_type,
+				matrix::smatrix_area_reference<
+						typename RowsRef::referred_matrix_type,
+						RowsRef::rows(), RowsRef::cols()
+					>
+			>();
+	}
+
+	void testAllColumnsSubscript() {
+		matrix::smatrix<int, 3, 3> m({ { 1, 2, 3 },
+		                               { 4, 5, 6 },
+		                               { 7, 8, 9 } });
+
+		assert(checkAllColumnsSubscript(m[matrix::srange<2>(1)]));
+	}
+
 	void testSingleRowSingleColumnAccess() {
 		matrix::smatrix<int, 2, 3> m({ { 1, 2, 3 },
 		                               { 4, 5, 6 } });
 
-		assert(m[1][2].rows() == 1);
-		assert(m[1][2].cols() == 1);
 		assert(m[1][2].element_at(0, 0) == 6);
 		assert((m[1][2])[0][0] == 6);
 		int& n = m[1][2];
@@ -482,8 +551,6 @@ namespace smatrix {
 		                               { 5,  6,  7,  8 },
 		                               { 9, 10, 11, 12 } });
 
-		assert(m[2][matrix::srange<3>(0)].rows() == 1);
-		assert(m[2][matrix::srange<3>(1)].cols() == 3);
 		assert(m[2][matrix::srange<3>(1)] == (matrix::smatrix<int, 1, 3>({ { 10, 11, 12 } })));
 		assert(m[2][matrix::srange<3>(1)].element_at(0, 1) == 11);
 		assert((m[2][matrix::srange<3>(1)])[0][1] == 11);
@@ -509,8 +576,6 @@ namespace smatrix {
 		                               { 4, 5, 6 },
 		                               { 7, 8, 9 } });
 
-		assert(m[2][matrix::all].rows() == 1);
-		assert(m[2][matrix::all].cols() == 3);
 		assert(m[2][matrix::all] == (matrix::smatrix<int, 1, 3>({ { 7, 8, 9 } })));
 		assert(m[2][matrix::all].element_at(0, 1) == 8);
 		assert((m[2][matrix::all])[0][1] == 8);
@@ -542,6 +607,9 @@ namespace smatrix {
 		testAllRowsSubscript();
 		testSingleRowSingleColumnRowsReference();
 		testMultiRowOrMultiColumnRowsReference();
+		testColumnIndexSubscript();
+		testColumnsRangeSubscript();
+		testAllColumnsSubscript();
 		testSingleRowSingleColumnAccess();
 		testSingleRowMultipleColumnsAccess();
 		testSingleRowAllColumnsAccess();
@@ -790,12 +858,75 @@ namespace dmatrix {
 		assert_throws(m[2] = (matrix::dmatrix<int>({ { 3, 4 } })), matrix::incompatible_operands);
 	}
 
+	template <typename RowsRef>
+	bool checkColumnIndexSubscript(unsigned col_index, RowsRef rows_ref) {
+		auto area_ref = rows_ref[col_index];
+		using area_ref_type = decltype(area_ref);
+
+		return area_ref.rows() == rows_ref.rows()
+		    && area_ref.cols() == 1
+		    && std::is_same<
+				area_ref_type,
+				matrix::dmatrix_area_reference<typename RowsRef::referred_matrix_type>
+			>();
+	}
+
+	void testColumnIndexSubscript() {
+		matrix::dmatrix<int> m({ { 1, 2, 3 },
+		                         { 4, 5, 6 },
+		                         { 7, 8, 9 } });
+
+		assert(checkColumnIndexSubscript(1, m[matrix::drange(2, 1)]));
+	}
+
+	template <typename RowsRef>
+	bool checkColumnsRangeSubscript(unsigned cols, unsigned first_col, RowsRef rows_ref) {
+		auto area_ref = rows_ref[matrix::drange(cols, first_col)];
+		using area_ref_type = decltype(area_ref);
+
+		return area_ref.rows() == rows_ref.rows()
+		    && area_ref.cols() == cols
+		    && std::is_same<
+				area_ref_type,
+				matrix::dmatrix_area_reference<typename RowsRef::referred_matrix_type>
+			>();
+	}
+
+	void testColumnsRangeSubscript() {
+		matrix::dmatrix<int> m({ { 1, 2, 3 },
+		                         { 4, 5, 6 },
+		                         { 7, 8, 9 } });
+
+		assert(checkColumnsRangeSubscript(1, 1, m[matrix::drange(2, 0)]));
+		assert(checkColumnsRangeSubscript(2, 0, m[matrix::drange(2, 1)]));
+		assert(checkColumnsRangeSubscript(3, 0, m[matrix::drange(2, 0)]));
+	}
+
+	template <typename RowsRef>
+	bool checkAllColumnsSubscript(RowsRef rows_ref) {
+		auto area_ref = rows_ref[matrix::all];
+		using area_ref_type = decltype(area_ref);
+
+		return area_ref.rows() == rows_ref.rows()
+		    && area_ref.cols() == rows_ref.cols()
+		    && std::is_same<
+				area_ref_type,
+				matrix::dmatrix_area_reference<typename RowsRef::referred_matrix_type>
+			>();
+	}
+
+	void testAllColumnsSubscript() {
+		matrix::dmatrix<int> m({ { 1, 2, 3 },
+		                         { 4, 5, 6 },
+		                         { 7, 8, 9 } });
+
+		assert(checkAllColumnsSubscript(m[matrix::drange(2, 1)]));
+	}
+
 	void testSingleRowSingleColumnAccess() {
 		matrix::dmatrix<int> m({ { 1, 2, 3 },
 		                         { 4, 5, 6 } });
 
-		assert(m[1][2].rows() == 1);
-		assert(m[1][2].cols() == 1);
 		assert(m[1][2].element_at(0, 0) == 6);
 		assert((m[1][2])[0][0] == 6);
 		int& n = m[1][2];
@@ -828,8 +959,6 @@ namespace dmatrix {
 		                         { 5,  6,  7,  8 },
 		                         { 9, 10, 11, 12 } });
 
-		assert(m[2][matrix::drange(3, 0)].rows() == 1);
-		assert(m[2][matrix::drange(3, 1)].cols() == 3);
 		assert(m[2][matrix::drange(3, 1)] == (matrix::dmatrix<int>({ { 10, 11, 12 } })));
 		assert(m[2][matrix::drange(3, 1)].element_at(0, 1) == 11);
 		assert((m[2][matrix::drange(3, 1)])[0][1] == 11);
@@ -855,8 +984,6 @@ namespace dmatrix {
 		                         { 4, 5, 6 },
 		                         { 7, 8, 9 } });
 
-		assert(m[2][matrix::all].rows() == 1);
-		assert(m[2][matrix::all].cols() == 3);
 		assert(m[2][matrix::all] == (matrix::dmatrix<int>({ { 7, 8, 9 } })));
 		assert(m[2][matrix::all].element_at(0, 1) == 8);
 		assert((m[2][matrix::all])[0][1] == 8);
@@ -890,6 +1017,9 @@ namespace dmatrix {
 		testAllRowsSubscript();
 		testSingleRowSingleColumnRowsReference();
 		testMultiRowOrMultiColumnRowsReference();
+		testColumnIndexSubscript();
+		testColumnsRangeSubscript();
+		testAllColumnsSubscript();
 		testSingleRowSingleColumnAccess();
 		testSingleRowMultipleColumnsAccess();
 		testSingleRowAllColumnsAccess();

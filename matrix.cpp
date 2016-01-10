@@ -388,7 +388,39 @@ namespace smatrix {
 		assert(checkAllRowsSubscript(m));
 	}
 
-	void testSingleRowAccess() {
+	void testSingleRowSingleColumnRowsReference() {
+		matrix::smatrix<int, 5, 1> m({ { 1 },
+		                               { 2 },
+		                               { 3 },
+		                               { 4 },
+		                               { 5 } });
+
+		assert(m[1] == (matrix::smatrix<int, 1, 1>({ { 2 } })));
+
+		assert(m[3].element_at(0, 0) == 4);
+		int& n = m[3].element_at(0, 0);
+		assert(n == 4);
+
+		assert(m[4] == 5);
+		int& r = m[4];
+		assert(r == 5);
+
+		m[0] = matrix::smatrix<int, 1, 1>({ { 6 } });
+		m[1].element_at(0, 0) = 7;
+		m[2] = 8;
+		n = 9;
+		r = 0;
+
+		assert(m == (matrix::smatrix<int, 5, 1>({ { 6 },
+		                                          { 7 },
+		                                          { 8 },
+		                                          { 9 },
+		                                          { 0 } })));
+
+		//assert_not_compilable(m[2] = (matrix::smatrix<int, 1, 2>({ { 3, 4 } })));
+	}
+
+	void testMultiRowOrMultiColumnRowsReference() {
 		matrix::smatrix<int, 3, 3> m({ { 1, 2, 3 },
 		                               { 4, 5, 6 },
 		                               { 7, 8, 9 } });
@@ -406,41 +438,10 @@ namespace smatrix {
 		                                          { -1,   5, 6 },
 		                                          {  7, 100, 9 } })));
 
+		//assert_not_compilable(m[2] == 0);
 		//assert_not_compilable(m[2] = 0);
 		//assert_not_compilable(int r = m[2]);
 		//assert_not_compilable(m[2] = (matrix::smatrix<int, 1, 2>({ { 3, 4 } })));
-
-		{
-			matrix::smatrix<int, 5, 1> v({ { 1 },
-			                               { 2 },
-			                               { 3 },
-			                               { 4 },
-			                               { 5 } });
-
-			assert(v[1] == (matrix::smatrix<int, 1, 1>({ { 2 } })));
-
-			assert(v[3].element_at(0, 0) == 4);
-			int& n = v[3].element_at(0, 0);
-			assert(n == 4);
-
-			assert(v[4] == 5);
-			int& r = v[4];
-			assert(r == 5);
-
-			v[0] = matrix::smatrix<int, 1, 1>({ { 6 } });
-			v[1].element_at(0, 0) = 7;
-			v[2] = 8;
-			n = 9;
-			r = 0;
-
-			assert(v == (matrix::smatrix<int, 5, 1>({ { 6 },
-			                                          { 7 },
-			                                          { 8 },
-			                                          { 9 },
-			                                          { 0 } })));
-
-			//assert_not_compilable(v[2] = (matrix::smatrix<int, 1, 2>({ { 3, 4 } })));
-		}
 	}
 
 	void testSingleRowSingleColumnAccess() {
@@ -539,7 +540,8 @@ namespace smatrix {
 		testRowIndexSubscript();
 		testRowsRangeSubscript();
 		testAllRowsSubscript();
-		testSingleRowAccess();
+		testSingleRowSingleColumnRowsReference();
+		testMultiRowOrMultiColumnRowsReference();
 		testSingleRowSingleColumnAccess();
 		testSingleRowMultipleColumnsAccess();
 		testSingleRowAllColumnsAccess();
@@ -732,7 +734,39 @@ namespace dmatrix {
 		assert(checkAllRowsSubscript(m));
 	}
 
-	void testSingleRowAccess() {
+	void testSingleRowSingleColumnRowsReference() {
+		matrix::dmatrix<int> m({ { 1 },
+		                         { 2 },
+		                         { 3 },
+		                         { 4 },
+		                         { 5 } });
+
+		assert(m[1] == (matrix::dmatrix<int>({ { 2 } })));
+
+		assert(m[3].element_at(0, 0) == 4);
+		int& n = m[3].element_at(0, 0);
+		assert(n == 4);
+
+		assert(m[4] == 5);
+		int& r = m[4];
+		assert(r == 5);
+
+		m[0] = matrix::dmatrix<int>({ { 6 } });
+		m[1].element_at(0, 0) = 7;
+		m[2] = 8;
+		n = 9;
+		r = 0;
+
+		assert(m == (matrix::dmatrix<int>({ { 6 },
+		                                    { 7 },
+		                                    { 8 },
+		                                    { 9 },
+		                                    { 0 } })));
+
+		assert_throws(m[2] = (matrix::dmatrix<int>({ { 3, 4 } })), matrix::incompatible_operands);
+	}
+
+	void testMultiRowOrMultiColumnRowsReference() {
 		matrix::dmatrix<int> m({ { 1, 2, 3 },
 		                         { 4, 5, 6 },
 		                         { 7, 8, 9 } });
@@ -750,41 +784,10 @@ namespace dmatrix {
 		                                    { -1,   5, 6 },
 		                                    {  7, 100, 9 } })));
 
+		assert_throws((void)(m[2] == 0), matrix::incompatible_operands);
 		assert_throws(m[2] = 0, matrix::incompatible_operands);
 		assert_throws(int r = m[2]; (void)r, matrix::incompatible_operands);
 		assert_throws(m[2] = (matrix::dmatrix<int>({ { 3, 4 } })), matrix::incompatible_operands);
-
-		{
-			matrix::dmatrix<int> v({ { 1 },
-			                         { 2 },
-			                         { 3 },
-			                         { 4 },
-			                         { 5 } });
-
-			assert(v[1] == (matrix::dmatrix<int>({ { 2 } })));
-
-			assert(v[3].element_at(0, 0) == 4);
-			int& n = v[3].element_at(0, 0);
-			assert(n == 4);
-
-			assert(v[4] == 5);
-			int& r = v[4];
-			assert(r == 5);
-
-			v[0] = matrix::dmatrix<int>({ { 6 } });
-			v[1].element_at(0, 0) = 7;
-			v[2] = 8;
-			n = 9;
-			r = 0;
-
-			assert(v == (matrix::dmatrix<int>({ { 6 },
-			                                    { 7 },
-			                                    { 8 },
-			                                    { 9 },
-			                                    { 0 } })));
-
-			assert_throws(v[2] = (matrix::dmatrix<int>({ { 3, 4 } })), matrix::incompatible_operands);
-		}
 	}
 
 	void testSingleRowSingleColumnAccess() {
@@ -885,7 +888,8 @@ namespace dmatrix {
 		testRowIndexSubscript();
 		testRowsRangeSubscript();
 		testAllRowsSubscript();
-		testSingleRowAccess();
+		testSingleRowSingleColumnRowsReference();
+		testMultiRowOrMultiColumnRowsReference();
 		testSingleRowSingleColumnAccess();
 		testSingleRowMultipleColumnsAccess();
 		testSingleRowAllColumnsAccess();
